@@ -10,9 +10,14 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
+<<<<<<< HEAD
 pnpm-debug.log*
 
 # Diagnostic reports
+=======
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+>>>>>>> 3dd6f90570fd876a1304f2a3b77038406e884e06
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Runtime data
@@ -25,6 +30,7 @@ pids
 lib-cov
 
 # Coverage directory used by tools like istanbul
+<<<<<<< HEAD
 coverage/
 *.lcov
 .nyc_output
@@ -33,19 +39,39 @@ coverage/
 .grunt
 
 # Bower dependency directory
+=======
+coverage
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Grunt intermediate storage (https://gruntjs.com/creating-plugins#storing-task-files)
+.grunt
+
+# Bower dependency directory (https://bower.io/)
+>>>>>>> 3dd6f90570fd876a1304f2a3b77038406e884e06
 bower_components
 
 # node-waf configuration
 .lock-wscript
 
+<<<<<<< HEAD
 # Compiled binary addons
+=======
+# Compiled binary addons (https://nodejs.org/api/addons.html)
+>>>>>>> 3dd6f90570fd876a1304f2a3b77038406e884e06
 build/Release
 
 # Dependency directories
 node_modules/
 jspm_packages/
 
+<<<<<<< HEAD
 # Snowpack dependency directory
+=======
+# Snowpack dependency directory (https://snowpack.dev/)
+>>>>>>> 3dd6f90570fd876a1304f2a3b77038406e884e06
 web_modules/
 
 # TypeScript cache
@@ -54,6 +80,8 @@ web_modules/
 # Optional caches
 .npm
 .eslintcache
+
+# Optional stylelint cache
 .stylelintcache
 
 # Optional REPL history
@@ -70,7 +98,11 @@ web_modules/
 .env.*
 !.env.example
 
+<<<<<<< HEAD
 # parcel-bundler cache
+=======
+# parcel-bundler cache (https://parceljs.org/)
+>>>>>>> 3dd6f90570fd876a1304f2a3b77038406e884e06
 .cache
 .parcel-cache
 
@@ -82,6 +114,7 @@ out
 .nuxt
 dist
 
+<<<<<<< HEAD
 # Gatsby
 .cache/
 
@@ -103,21 +136,60 @@ dist
 .docusaurus
 
 # Serverless
+=======
+# Gatsby files
+.cache/
+# Comment in the public line in if your project uses Gatsby and not Next.js
+# https://nextjs.org/blog/next-9-1#public-directory-support
+# public
+
+# vuepress build output
+.vuepress/dist
+
+# vuepress v2.x temp and cache directory
+.temp
+.cache
+
+# Sveltekit cache directory
+.svelte-kit/
+
+# vitepress build output
+**/.vitepress/dist
+
+# vitepress cache directory
+**/.vitepress/cache
+
+# Docusaurus cache and generated files
+.docusaurus
+
+# Serverless directories
+>>>>>>> 3dd6f90570fd876a1304f2a3b77038406e884e06
 .serverless/
 
 # FuseBox cache
 .fusebox/
 
+<<<<<<< HEAD
 # DynamoDB Local
 .dynamodb/
 
 # Firebase cache
+=======
+# DynamoDB Local files
+.dynamodb/
+
+# Firebase cache directory
+>>>>>>> 3dd6f90570fd876a1304f2a3b77038406e884e06
 .firebase/
 
 # TernJS port file
 .tern-port
 
+<<<<<<< HEAD
 # VSCode test versions
+=======
+# Stores VSCode versions used for testing VSCode extensions
+>>>>>>> 3dd6f90570fd876a1304f2a3b77038406e884e06
 .vscode-test
 
 # yarn v3
@@ -132,6 +204,9 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+<<<<<<< HEAD
 
 # Prisma generated
 generated/prisma/
+=======
+>>>>>>> 3dd6f90570fd876a1304f2a3b77038406e884e06
