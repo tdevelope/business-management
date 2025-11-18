@@ -1,0 +1,94 @@
+# === General compiled output ===
+dist/
+build/
+node_modules/
+
+# === Backend specific ignores ===
+backend/node_modules/
+backend/dist/
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# === Logs ===
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# === Diagnostic reports ===
+report.*.json
+
+# === Runtime data ===
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# === Coverage ===
+coverage/
+*.lcov
+.nyc_output
+
+# === Cache directories ===
+.cache
+.parcel-cache
+.temp
+.npm
+.eslintcache
+.stylelintcache
+
+# === Frameworkes ===
+.next
+out
+.nuxt
+.vuepress/dist
+.svelte-kit/
+**/.vitepress/dist
+**/.vitepress/cache
+.docusaurus
+
+# === Dependency managers ===
+bower_components
+jspm_packages/
+web_modules/
+
+# === Binary addons ===
+build/Release
+
+# === TypeScript ===
+*.tsbuildinfo
+
+# === REPL history ===
+.node_repl_history
+
+# === Output of npm pack ===
+*.tgz
+
+# === Yarn v3 ===
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# === Firebase / Serverless / Dynamo ===
+.serverless/
+.dynamodb/
+.firebase/
+
+# === Misc ===
+.tern-port
+.vscode-test
+
+# === Vite logs ===
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# === Prisma generated files (optional) ===
+generated/prisma/
