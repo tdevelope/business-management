@@ -137,3 +137,8 @@ vite.config.ts.timestamp-*
 
 # Prisma generated
 generated/prisma/
+
+backend/node_modules_keep/
+backend/node_modules/
+backend/dist/
+backend/.env
