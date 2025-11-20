@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
 import { ServicesService } from "./services.service";
 
 @Controller('services')
@@ -10,18 +10,18 @@ export class ServicesController {
         return this.servicesService.getAllServices();
     }
 
-    @Post('add')
+    @Post()
     async addService(@Body() dto: { name: string; duration: number; price: number }) {
         return this.servicesService.addService(dto);
     }
 
-    @Patch('update')
-    async updateService(@Body() dto: { id: number; name?: string; duration?: number; price?: number }) {
-        return this.servicesService.updateService(dto);
+    @Patch(':id')
+    async updateService(@Param('id') id: string, @Body() dto: { name?: string; duration?: number; price?: number }) {
+        return this.servicesService.updateService({ id: Number(id), ...dto });
     }
 
-    @Delete('delete')
-    async deleteService(@Body() dto: { id: number }) {
-        return this.servicesService.deleteService(dto);
+    @Delete(':id')
+    async deleteService(@Param('id') id: string) {
+        return this.servicesService.deleteService(Number(id));
     }
 }

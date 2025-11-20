@@ -8,36 +8,27 @@ export class ServicesService {
     constructor(private prisma: PrismaService) {}
     
     async getAllServices() {
-        return await this.prisma.service.findMany();
+        return this.prisma.service.findMany();
     }
 
     async addService(dto: { name: string; duration: number; price: number }) {
-        const service = await this.prisma.service.create({
-            data: {
-                name: dto.name,
-                duration: dto.duration,
-                price: dto.price,
-            },
-        });
-        return service;
+        return this.prisma.service.create({ data: dto });
     }
 
-    async updateService(dto: { id: number; name?: string; duration?: number; price?: number }) {    
-        const service = await this.prisma.service.update({
+    async updateService(dto: { id: number; name?: string; duration?: number; price?: number }) {
+        return this.prisma.service.update({
             where: { id: dto.id },
             data: {
-                name: dto.name,
-                duration: dto.duration,
-                price: dto.price,
+                ...(dto.name !== undefined && { name: dto.name }),
+                ...(dto.duration !== undefined && { duration: dto.duration }),
+                ...(dto.price !== undefined && { price: dto.price }),
             },
         });
-        return service;
     }
 
-    async deleteService(dto: { id: number }) {   
-        const service = await this.prisma.service.delete({
-            where: { id: dto.id },
+    async deleteService(id: number ) {   
+        return this.prisma.service.delete({
+            where: { id },
         });
-        return service;
     }
 }
