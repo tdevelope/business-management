@@ -11,10 +11,21 @@ export class RegisterDto {
   @IsString()
   @MinLength(2)
   @MaxLength(30)
-  name!: string;
+  @Matches(/^[A-Za-zא-ת]+$/, { message: 'First name must contain letters only' })
+  firstName!: string;
+
+  @IsString()
+  @MinLength(2)
+  @MaxLength(30)
+  @Matches(/^[A-Za-zא-ת]+$/, { message: 'Last name must contain letters only' })
+  lastName!: string;
 
   @IsEmail()
   email!: string;
+
+  @IsString()
+  @Matches(/^(05\d{8}|0[2-9]\d{7})$/, { message: 'Invalid phone number' })
+  phone!: string;
 
   @IsString()
   @MinLength(8)
