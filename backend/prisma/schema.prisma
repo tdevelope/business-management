@@ -30,7 +30,8 @@ model Service {
 
 model Customer {
   id        Int      @id @default(autoincrement())
-  name      String
+  firstName String
+  lastName  String
   phone     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

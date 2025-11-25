@@ -1,12 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
 
-    constructor(private jwtService: JwtService, private prisma: PrismaService) {}
+    constructor(
+        private jwtService: JwtService,
+        private prisma: PrismaService
+    ) {}
 
     private generateToken(user: { id: number; email: string; role: string }) {
         const payload = {
@@ -20,13 +25,13 @@ export class AuthService {
     }
 
 
-    async register(dto: { name: string; email: string; password: string; role: string }) {
+    async register(dto: RegisterDto) {
         const existing = await this.prisma.user.findUnique({
             where: { email: dto.email },
         });
 
         if (existing) {
-            throw new Error('User with this email already exists');
+            throw new BadRequestException('User with this email already exists');
         }
 
         const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -43,19 +48,19 @@ export class AuthService {
         return this.generateToken(user);
     }
 
-    async login(dto: { email: string; password: string }) {
+    async login(dto: LoginDto) {
         const user = await this.prisma.user.findUnique({
             where: { email: dto.email },
         });
 
         if (!user) {
-            throw new Error('User not found');
+            throw new NotFoundException('User not found');
         }
 
         const isValid = await bcrypt.compare(dto.password, user.password);
 
         if (!isValid) {
-            throw new Error('Invalid password');
+            throw new BadRequestException('Invalid password');
         }
         
         return this.generateToken(user);
