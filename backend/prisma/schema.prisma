@@ -9,12 +9,16 @@ datasource db {
 
 model User {
   id        Int      @id @default(autoincrement())
-  name      String
+  firstName String
+  lastName  String
   email     String   @unique
+  phone     String
   password  String
-  role      String   @default("admin")
+  role      String   @default("customer") // admin, staff, customer
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  appointments Appointment[]
 }
 
 model Service {
@@ -28,26 +32,16 @@ model Service {
   appointments Appointment[]
 }
 
-model Customer {
-  id        Int      @id @default(autoincrement())
-  name      String
-  phone     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  appointments Appointment[]
-}
-
 model Appointment {
   id         Int      @id @default(autoincrement())
-  customerId Int
+  userId     Int
   serviceId  Int
   date       DateTime
   startTime  DateTime
   endTime    DateTime
   status     String   @default("scheduled")
 
-  customer   Customer @relation(fields: [customerId], references: [id])
+  user       User @relation(fields: [userId], references: [id])
   service    Service  @relation(fields: [serviceId], references: [id])
 }
 
