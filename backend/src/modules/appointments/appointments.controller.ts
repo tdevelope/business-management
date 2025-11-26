@@ -19,12 +19,12 @@ export class AppointmentsController {
         return this.appointmentsService.getForDate(dto);
     }
 
-    @Post('check')
+    @Post('checkAvailability')
     async checkAvailability(@Body() dto: CheckAvailabilityDto) {
         return this.appointmentsService.checkAvailability(dto);
     }
 
-    @Post('suggestions')
+    @Post('getSuggestions')
     async getSuggestions(@Body() dto: GetSuggestionsDto) {
         return this.appointmentsService.getSuggestions(dto);
     }

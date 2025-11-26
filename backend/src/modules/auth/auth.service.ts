@@ -47,7 +47,10 @@ export class AuthService {
             },
         });
 
-        return this.generateToken(user);
+        return {
+            user,
+            ...this.generateToken(user),
+        };
     }
 
     async login(dto: LoginDto) {
@@ -65,7 +68,10 @@ export class AuthService {
             throw new BadRequestException('Invalid password');
         }
         
-        return this.generateToken(user);
+        return {
+            user,
+            ...this.generateToken(user),
+        };
     }
 
 }

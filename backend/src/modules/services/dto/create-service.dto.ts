@@ -1,6 +1,7 @@
 import { 
   IsString, MinLength, MaxLength, Matches, 
-  IsInt, Min, Max 
+  IsInt, Min, Max, 
+  IsOptional
 } from 'class-validator';
 
 export class CreateServiceDto {
@@ -9,6 +10,10 @@ export class CreateServiceDto {
   @MaxLength(30)
   @Matches(/^[A-Za-zא-ת ]+$/, { message: 'Service name must contain letters only' })
   name!: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 
   @IsInt()
   @Min(2)       
