@@ -1,12 +1,12 @@
 import { 
-  IsInt, 
-  IsDateString, 
-  Matches 
+  IsInt,
+  IsDateString,
+  Matches
 } from 'class-validator';
 
 export class CreateAppointmentDto {
   @IsInt()
-  customerId!: number;
+  userId!: number;
 
   @IsInt()
   serviceId!: number;
