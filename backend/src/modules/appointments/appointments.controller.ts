@@ -3,6 +3,7 @@ import { AppointmentsService } from "./appointments.service";
 import { CreateAppointmentDto } from "./dto/create-appointment.dto";
 import { GetAppointmentsByDateDto } from "./dto/get-appointments-by-date.dto";
 import { CheckAvailabilityDto } from "./dto/check-availability.dto";
+import { GetSuggestionsDto } from "./dto/get-suggestions.dto";
 
 @Controller('appointments')
 export class AppointmentsController {
@@ -22,4 +23,10 @@ export class AppointmentsController {
     async checkAvailability(@Body() dto: CheckAvailabilityDto) {
         return this.appointmentsService.checkAvailability(dto);
     }
+
+    @Post('suggestions')
+    async getSuggestions(@Body() dto: GetSuggestionsDto) {
+        return this.appointmentsService.getSuggestions(dto);
+    }
+
 }
