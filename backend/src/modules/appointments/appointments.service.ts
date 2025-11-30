@@ -63,14 +63,31 @@ export class AppointmentsService {
         });
     }
 
+    private async updateExpiredAppointments(appointments) {
+        const now = new Date();
+
+        for (const appt of appointments) {
+            if (appt.endTime < now && appt.status === 'scheduled') {
+            await this.prisma.appointment.update({
+                where: { id: appt.id },
+                data: { status: 'done' },
+            });
+            appt.status = 'done';
+            }
+        }
+
+        return appointments;
+    }
+
     async getForDate(dto: GetAppointmentsByDateDto) {
         const { date } = dto;
 
         const [y, m, d] = date.split('-').map(Number);
         const dayStart = new Date(y, m - 1, d, 0, 0, 0);
         const dayEnd = new Date(y, m - 1, d, 23, 59, 59, 999);
+        
 
-        return this.prisma.appointment.findMany({
+        const appointments = await this.prisma.appointment.findMany({
             where: {
                 startTime: {
                     gte: dayStart,
@@ -81,6 +98,8 @@ export class AppointmentsService {
                 startTime: 'asc',
             },
         });
+        
+        return this.updateExpiredAppointments(appointments);
     }
 
 
@@ -109,15 +128,26 @@ export class AppointmentsService {
     async getSuggestions(dto: GetSuggestionsDto) {
         const { serviceId, date, preferredTime } = dto;
 
-        // --- Parse preferred datetime as LOCAL ---
-        const [y, m, d] = date.split('-').map(Number);
-        const [hh, mm] = preferredTime.split(':').map(Number);
+        // --- Validate preferred time ---
+        if (!/^\d{2}:\d{2}$/.test(preferredTime)) {
+            throw new BadRequestException("Invalid time format");
+        }
+
+        const [hh, mm] = preferredTime.split(":").map(Number);
+        if (hh < 0 || hh > 23 || mm < 0 || mm > 59) {
+            throw new BadRequestException("Invalid hour or minute value");
+        }
+
+        // --- Parse dates ---
+        const [y, m, d] = date.split("-").map(Number);
         const preferredDateTime = new Date(y, m - 1, d, hh, mm);
 
-        // --- Basic validations ---
         const now = new Date();
         const MAX_DAYS = 90;
-        const diffDays = (preferredDateTime.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+
+        const diffDays =
+            (preferredDateTime.getTime() - now.getTime()) /
+            (1000 * 60 * 60 * 24);
 
         if (preferredDateTime < now) {
             throw new BadRequestException("Cannot generate suggestions for a past date");
@@ -125,7 +155,7 @@ export class AppointmentsService {
 
         if (diffDays > MAX_DAYS) {
             throw new BadRequestException(
-                `Cannot generate suggestions more than ${MAX_DAYS} days in advance`
+            `Cannot generate suggestions more than ${MAX_DAYS} days in advance`
             );
         }
 
@@ -133,95 +163,81 @@ export class AppointmentsService {
         const service = await this.prisma.service.findUnique({
             where: { id: serviceId },
         });
-        if (!service) throw new NotFoundException('Service not found');
+        if (!service) throw new NotFoundException("Service not found");
 
         const duration = service.duration;
 
-        // --- Business schedule ---
+        // --- Business rules ---
         const WORKING_DAYS = [0, 1, 2, 3, 4];
         const OPEN_TIME = "09:00";
         const CLOSE_TIME = "17:00";
 
-        const dateObj = new Date(y, m - 1, d);
-        const dayOfWeek = dateObj.getDay();
+        const dayOfWeek = new Date(y, m - 1, d).getDay();
         if (!WORKING_DAYS.includes(dayOfWeek)) {
-            throw new BadRequestException('The business is closed on this day');
+            throw new BadRequestException("The business is closed on this day");
         }
 
-        // --- Parse local open/close times ---
-        const [openH, openM] = OPEN_TIME.split(':').map(Number);
-        const openDate = new Date(y, m - 1, d, openH, openM);
+        const [openH, openM] = OPEN_TIME.split(":").map(Number);
+        const [closeH, closeM] = CLOSE_TIME.split(":").map(Number);
 
-        const [closeH, closeM] = CLOSE_TIME.split(':').map(Number);
+        const openDate = new Date(y, m - 1, d, openH, openM);
         const closeDate = new Date(y, m - 1, d, closeH, closeM);
 
-        // --- Get existing appointments (already LOCAL) ---
+        // --- Existing appointments ---
         const appointments = await this.getForDate({ date });
-
         const busySlots = appointments
             .filter(a => a.startTime && a.endTime)
             .map(a => ({
-                start: new Date(a.startTime),
-                end: new Date(a.endTime),
+            start: new Date(a.startTime),
+            end: new Date(a.endTime),
             }))
             .sort((a, b) => a.start.getTime() - b.start.getTime());
 
-        // --- Find free windows ---
+        // --- Free slots ---
         const freeSlots: { start: Date; end: Date }[] = [];
         let current = new Date(openDate);
 
         for (const slot of busySlots) {
             if (current < slot.start) {
-                freeSlots.push({
-                    start: new Date(current),
-                    end: new Date(slot.start),
-                });
+            freeSlots.push({ start: new Date(current), end: new Date(slot.start) });
             }
-            if (slot.end > current) {
-                current = new Date(slot.end);
-            }
+            if (slot.end > current) current = new Date(slot.end);
         }
 
         if (current < closeDate) {
-            freeSlots.push({
-                start: new Date(current),
-                end: new Date(closeDate),
-            });
+            freeSlots.push({ start: new Date(current), end: new Date(closeDate) });
         }
 
-        // --- Build all possible suggestions ---
+        // --- Build possible suggestions ---
         const possibleSuggestions: { start: Date; end: Date }[] = [];
 
         for (const slot of freeSlots) {
             let t = new Date(slot.start);
 
             while (t.getTime() + duration * 60000 <= slot.end.getTime()) {
-                const suggestionStart = new Date(t);
-                const suggestionEnd = new Date(t.getTime() + duration * 60000);
+            possibleSuggestions.push({
+                start: new Date(t),
+                end: new Date(t.getTime() + duration * 60000),
+            });
 
-                possibleSuggestions.push({
-                    start: suggestionStart,
-                    end: suggestionEnd,
-                });
-
-                t = new Date(t.getTime() + 15 * 60000); // move 15 min
+            t = new Date(t.getTime() + 15 * 60000); // step 15 min
             }
         }
 
         if (possibleSuggestions.length === 0) return [];
 
-        // --- Filter out suggestions from the past (important!) ---
+        // --- Filter out past suggestions ---
         const futureSuggestions = possibleSuggestions.filter(s => s.start >= now);
         if (futureSuggestions.length === 0) return [];
 
-        // --- Sort best matches ---
+        // --- Sort closest to preferred time ---
         futureSuggestions.sort(
             (a, b) =>
-                Math.abs(a.start.getTime() - preferredDateTime.getTime()) -
-                Math.abs(b.start.getTime() - preferredDateTime.getTime())
+            Math.abs(a.start.getTime() - preferredDateTime.getTime()) -
+            Math.abs(b.start.getTime() - preferredDateTime.getTime())
         );
 
         return futureSuggestions.slice(0, 3);
     }
-    
+
 }
