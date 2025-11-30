@@ -30,7 +30,7 @@ function AppointmentsCalendarContent() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
   const [formData, setFormData] = useState({
-    serviceId: "",
+    serviceId: 0,
     startTime: "",
     endTime: "",
   })
@@ -88,13 +88,13 @@ function AppointmentsCalendarContent() {
     if (appointment) {
       setSelectedAppointment(appointment)
       setFormData({
-        serviceId: appointment.serviceId,
+        serviceId: Number(appointment.serviceId),
         startTime: appointment.startTime,
         endTime: appointment.endTime,
       })
     } else {
       setSelectedAppointment(null)
-      setFormData({ serviceId: "", startTime: "", endTime: "" })
+      setFormData({ serviceId: 0, startTime: "", endTime: "" })
     }
     setIsDialogOpen(true)
   }
@@ -102,15 +102,17 @@ function AppointmentsCalendarContent() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false)
     setSelectedAppointment(null)
-    setFormData({ serviceId: "", startTime: "", endTime: "" })
+    setFormData({ serviceId: 0, startTime: "", endTime: "" })
   }
 
   const handleSubmit = (e: React.FormEvent) => {
+    const time = formData.startTime.split("T")[1].slice(0, 5)
+
     e.preventDefault()
     createMutation.mutate({
-      serviceId: formData.serviceId,
-      startTime: formData.startTime,
-      endTime: formData.endTime,
+      serviceId: Number(formData.serviceId),
+      date: formData.startTime.split("T")[0],
+      startTime: time
     })
   }
 
@@ -268,8 +270,8 @@ function AppointmentsCalendarContent() {
                   <div className="space-y-2">
                     <Label htmlFor="service">Service</Label>
                     <Select
-                      value={formData.serviceId}
-                      onValueChange={(value) => setFormData({ ...formData, serviceId: value })}
+                      value={String(formData.serviceId)}
+                      onValueChange={(value) => setFormData({ ...formData, serviceId: Number(value) })}
                       required
                     >
                       <SelectTrigger>
@@ -277,7 +279,7 @@ function AppointmentsCalendarContent() {
                       </SelectTrigger>
                       <SelectContent>
                         {services?.map((service) => (
-                          <SelectItem key={service.id} value={service.id}>
+                          <SelectItem key={service.id} value={String(service.id)}>
                             {service.name}
                           </SelectItem>
                         ))}
@@ -291,16 +293,6 @@ function AppointmentsCalendarContent() {
                       type="datetime-local"
                       value={formData.startTime}
                       onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="endTime">End Time</Label>
-                    <Input
-                      id="endTime"
-                      type="datetime-local"
-                      value={formData.endTime}
-                      onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
                       required
                     />
                   </div>

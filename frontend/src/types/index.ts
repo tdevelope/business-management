@@ -38,7 +38,7 @@ export interface Appointment {
 }
 
 export interface CreateAppointmentDto {
-  serviceId: string
+  serviceId: Number
   date: string
   startTime: string
 }
