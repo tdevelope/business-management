@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Query, Req, UseGuards, Delete, ForbiddenException } from "@nestjs/common";
 import { AppointmentsService } from "./appointments.service";
 import { CreateAppointmentDto } from "./dto/create-appointment.dto";
 import { GetAppointmentsByDateDto } from "./dto/get-appointments-by-date.dto";
@@ -30,6 +30,15 @@ export class AppointmentsController {
     @Post('getSuggestions')
     async getSuggestions(@Body() dto: GetSuggestionsDto) {
         return this.appointmentsService.getSuggestions(dto);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Delete(':id')
+    async deleteAppointment(@Param('id') id: string, @Req() req) {
+        if (req.user.role !== 'admin') {
+            throw new ForbiddenException('Access denied');
+        }
+        return this.appointmentsService.delete(+id);
     }
 
 }
