@@ -5,9 +5,7 @@ import {
 } from 'class-validator';
 
 export class CreateAppointmentDto {
-  @IsInt()
-  userId!: number;
-
+  
   @IsInt()
   serviceId!: number;
 
