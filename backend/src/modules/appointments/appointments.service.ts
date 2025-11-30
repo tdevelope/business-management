@@ -10,8 +10,8 @@ import { GetSuggestionsDto } from "./dto/get-suggestions.dto";
 export class AppointmentsService {
     constructor(private prisma: PrismaService) {}
 
-    async createAppointment(dto: CreateAppointmentDto) {
-        const { userId, serviceId, date, startTime } = dto;
+    async createAppointment(dto: CreateAppointmentDto, userId: number) {
+        const { serviceId, date, startTime } = dto;
         
         const service = await this.prisma.service.findUnique({
             where: { id: serviceId },
@@ -36,27 +36,33 @@ export class AppointmentsService {
 
         return this.prisma.appointment.create({
             data: {
-            userId,
-            serviceId,
-            date: new Date(date),
-            startTime: start,
-            endTime: end,
-            status: 'scheduled',
+                userId,
+                serviceId,
+                date: new Date(date),
+                startTime: start,
+                endTime: end,
+                status: 'scheduled',
             },
         });
     }
 
     async getForDate(dto: GetAppointmentsByDateDto) {
-    const { date } = dto;
+        const { date } = dto;
 
-    return this.prisma.appointment.findMany({
-        where: {
-        date: new Date(date),
-        },
-        orderBy: {
-        startTime: 'asc',
-        },
-    });
+        const dayStart = new Date(date + "T00:00:00.000Z");
+        const dayEnd = new Date(date + "T23:59:59.999Z");
+
+        return this.prisma.appointment.findMany({
+            where: { 
+                startTime: {
+                    gte: dayStart,
+                    lte: dayEnd,
+                }
+             },
+            orderBy: {
+                startTime: 'asc',
+            },
+        });
     }
 
 

@@ -22,12 +22,13 @@ model User {
 }
 
 model Service {
-  id        Int      @id @default(autoincrement())
-  name      String
-  duration  Int
-  price     Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  duration    Int
+  price       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   appointments Appointment[]
 }
