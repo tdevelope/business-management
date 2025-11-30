@@ -97,6 +97,10 @@ export class AppointmentsService {
             orderBy: {
                 startTime: 'asc',
             },
+            include: {
+                service: true,
+                user: true
+            }
         });
         
         return this.updateExpiredAppointments(appointments);
