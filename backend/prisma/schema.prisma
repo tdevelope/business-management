@@ -54,3 +54,10 @@ model BusinessSettings {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 }
+
+model BlockedTime {
+  id        Int      @id @default(autoincrement())
+  startTime DateTime
+  endTime   DateTime
+  reason    String?  // optional - text the admin writes
+}
