@@ -18,6 +18,15 @@ export class AppointmentsController {
     }
 
     @UseGuards(JwtAuthGuard)
+    @Get()
+    async getAllAppointments(@Req() req) {
+        if (req.user.role !== 'admin') {
+            throw new ForbiddenException('Access denied');
+        }
+        return this.appointmentsService.getAllAppointments();
+    }
+
+    @UseGuards(JwtAuthGuard)
     @Get('date')
     async getAppointmentsByDate(@Query() dto: GetAppointmentsByDateDto, @Req() req) {
         if (req.user.role !== 'admin') {

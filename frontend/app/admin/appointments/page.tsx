@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { format } from "date-fns"
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, addWeeks, addMonths, subDays, subWeeks, subMonths, isSameDay, isSameMonth } from "date-fns"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,9 +26,11 @@ import { Calendar, Plus } from "lucide-react"
 import type { Appointment } from "@/types"
 
 function AppointmentsCalendarContent() {
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"))
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [viewMode, setViewMode] = useState<"day" | "week" | "month">("month")
+
   const [formData, setFormData] = useState({
     serviceId: 0,
     startTime: "",
@@ -39,8 +41,8 @@ function AppointmentsCalendarContent() {
   const queryClient = useQueryClient()
 
   const { data: appointments, isLoading } = useQuery({
-    queryKey: ["appointments", selectedDate],
-    queryFn: () => appointmentsApi.getForDate(selectedDate),
+    queryKey: ["appointments"],
+    queryFn: appointmentsApi.getAll,
   })
 
   const { data: services } = useQuery({
@@ -106,13 +108,19 @@ function AppointmentsCalendarContent() {
   }
 
   const handleSubmit = (e: React.FormEvent) => {
-    const time = formData.startTime.split("T")[1].slice(0, 5)
-
     e.preventDefault()
+    const [datePart, timeWithSeconds] = formData.startTime.split("T")
+    const time = timeWithSeconds?.slice(0, 5)
+
+    if (!datePart || !time || !formData.serviceId) {
+      toast({ title: "Error", description: "Please fill all required fields", variant: "destructive" })
+      return
+    }
+
     createMutation.mutate({
       serviceId: Number(formData.serviceId),
-      date: formData.startTime.split("T")[0],
-      startTime: time
+      date: datePart,
+      startTime: time,
     })
   }
 
@@ -131,6 +139,74 @@ function AppointmentsCalendarContent() {
     }
   }
 
+  const handlePrev = () => {
+    setCurrentDate((prev) => {
+      if (viewMode === "day") return subDays(prev, 1)
+      if (viewMode === "week") return subWeeks(prev, 1)
+      return subMonths(prev, 1)
+    })
+  }
+
+  const handleNext = () => {
+    setCurrentDate((prev) => {
+      if (viewMode === "day") return addDays(prev, 1)
+      if (viewMode === "week") return addWeeks(prev, 1)
+      return addMonths(prev, 1)
+    })
+  }
+
+  const handleToday = () => {
+    setCurrentDate(new Date())
+  }
+
+  const handleDateInputChange = (value: string) => {
+    const parsed = new Date(value)
+    if (!isNaN(parsed.getTime())) {
+      setCurrentDate(parsed)
+    }
+  }
+
+  const getCalendarDays = (): Date[] => {
+    if (viewMode === "day") {
+      return [currentDate]
+    }
+
+    if (viewMode === "week") {
+      const start = startOfWeek(currentDate, { weekStartsOn: 0 })
+      return Array.from({ length: 7 }, (_, i) => addDays(start, i))
+    }
+
+    const monthStart = startOfMonth(currentDate)
+    const monthEnd = endOfMonth(currentDate)
+    const gridStart = startOfWeek(monthStart, { weekStartsOn: 0 })
+    const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 0 })
+
+    const days: Date[] = []
+    for (let d = gridStart; d <= gridEnd; d = addDays(d, 1)) {
+      days.push(d)
+    }
+    return days
+  }
+
+  const calendarDays = getCalendarDays()
+
+  const getAppointmentsForDay = (day: Date): Appointment[] => {
+    if (!appointments) return []
+    return appointments.filter((apt) => isSameDay(new Date(apt.startTime), day))
+  }
+
+  const periodLabel = () => {
+    if (viewMode === "day") {
+      return format(currentDate, "PPP")
+    }
+    if (viewMode === "week") {
+      const start = startOfWeek(currentDate, { weekStartsOn: 0 })
+      const end = endOfWeek(currentDate, { weekStartsOn: 0 })
+      return `${format(start, "PPP")} - ${format(end, "PPP")}`
+    }
+    return format(currentDate, "LLLL yyyy")
+  }
+
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="max-w-6xl mx-auto">
@@ -147,15 +223,53 @@ function AppointmentsCalendarContent() {
 
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Select Date</CardTitle>
+            <CardTitle>Calendar View</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-4 items-end">
-              <div className="flex-1 space-y-2">
+            <div className="flex flex-wrap gap-4 items-end">
+              <div className="space-y-2">
                 <Label htmlFor="date">Date</Label>
-                <Input id="date" type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+                <Input
+                  id="date"
+                  type="date"
+                  value={format(currentDate, "yyyy-MM-dd")}
+                  onChange={(e) => handleDateInputChange(e.target.value)}
+                />
               </div>
-              <Button onClick={() => setSelectedDate(format(new Date(), "yyyy-MM-dd"))}>Today</Button>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={handlePrev}>
+                  Prev
+                </Button>
+                <Button type="button" variant="outline" onClick={handleToday}>
+                  Today
+                </Button>
+                <Button type="button" variant="outline" onClick={handleNext}>
+                  Next
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={viewMode === "day" ? "default" : "outline"}
+                  onClick={() => setViewMode("day")}
+                >
+                  Day
+                </Button>
+                <Button
+                  type="button"
+                  variant={viewMode === "week" ? "default" : "outline"}
+                  onClick={() => setViewMode("week")}
+                >
+                  Week
+                </Button>
+                <Button
+                  type="button"
+                  variant={viewMode === "month" ? "default" : "outline"}
+                  onClick={() => setViewMode("month")}
+                >
+                  Month
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -164,51 +278,106 @@ function AppointmentsCalendarContent() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Appointments for {format(new Date(selectedDate), "PPP")}
+              Appointments for {periodLabel()}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <p className="text-muted-foreground">Loading...</p>
-            ) : appointments && appointments.length > 0 ? (
-              <div className="space-y-4">
-                {appointments.map((apt) => (
-                  <div
-                    key={apt.id}
-                    className="border rounded-lg p-4 cursor-pointer hover:bg-accent transition-colors"
-                    onClick={() => handleOpenDialog(apt)}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold text-lg">{apt.service?.name || "Service"}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(apt.startTime), "p")} - {format(new Date(apt.endTime), "p")}
-                        </p>
-                        {apt.user && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Client: {apt.user.firstName} {apt.user.lastName}
-                          </p>
+            ) : !appointments || appointments.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">No appointments found</p>
+            ) : viewMode === "day" ? (
+              <>
+                {getAppointmentsForDay(currentDate).length > 0 ? (
+                  <div className="space-y-4">
+                    {getAppointmentsForDay(currentDate).map((apt) => (
+                      <div
+                        key={apt.id}
+                        className="border rounded-lg p-4 cursor-pointer hover:bg-accent transition-colors"
+                        onClick={() => handleOpenDialog(apt)}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-semibold text-lg">{apt.service?.name || "Service"}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {format(new Date(apt.startTime), "PPp")} - {format(new Date(apt.endTime), "p")}
+                            </p>
+                            {apt.user && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                Client: {apt.user.firstName} {apt.user.lastName}
+                              </p>
+                            )}
+                          </div>
+                          <span
+                            className={`px-3 py-1 rounded-full text-sm ${
+                              apt.status === "confirmed"
+                                ? "bg-green-100 text-green-800"
+                                : apt.status === "pending"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : apt.status === "cancelled"
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-blue-100 text-blue-800"
+                            }`}
+                          >
+                            {apt.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">No appointments for this day</p>
+                )}
+              </>
+            ) : (
+              <div className="grid grid-cols-7 gap-2">
+                {calendarDays.map((day) => {
+                  const dayAppointments = getAppointmentsForDay(day)
+                  const isCurrentMonth = isSameMonth(day, currentDate)
+
+                  return (
+                    <div
+                      key={day.toISOString()}
+                      className={`border rounded-lg p-2 min-h-[120px] bg-background ${
+                        !isCurrentMonth && viewMode === "month" ? "opacity-50" : ""
+                      }`}
+                    >
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs font-semibold">
+                          {format(day, "d MMM")}
+                        </span>
+                        {viewMode === "week" && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {format(day, "EEE")}
+                          </span>
                         )}
                       </div>
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm ${
-                          apt.status === "confirmed"
-                            ? "bg-green-100 text-green-800"
-                            : apt.status === "pending"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : apt.status === "cancelled"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-blue-100 text-blue-800"
-                        }`}
-                      >
-                        {apt.status}
-                      </span>
+                      <div className="space-y-1">
+                        {dayAppointments.map((apt) => (
+                          <button
+                            key={apt.id}
+                            type="button"
+                            className="w-full text-left text-xs p-1 rounded bg-primary/10 hover:bg-primary/20 transition-colors"
+                            onClick={() => handleOpenDialog(apt)}
+                          >
+                            <span className="block font-medium">
+                              {format(new Date(apt.startTime), "p")} – {apt.service?.name || "Service"}
+                            </span>
+                            {apt.user && (
+                              <span className="block text-[10px] text-muted-foreground">
+                                {apt.user.firstName} {apt.user.lastName}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                        {dayAppointments.length === 0 && (
+                          <p className="text-[10px] text-muted-foreground">No appointments</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-8">No appointments for this date</p>
             )}
           </CardContent>
         </Card>

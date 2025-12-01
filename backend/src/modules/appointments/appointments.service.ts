@@ -73,6 +73,18 @@ export class AppointmentsService {
     });
   }
 
+  async getAllAppointments() {
+    return this.prisma.appointment.findMany({
+      include: {
+        service: true,
+        user: true,
+      },
+      orderBy: {
+        startTime: "asc",
+      },
+    });
+  }
+
   async getForDate(dto: GetAppointmentsByDateDto) {
     const { date } = dto;
 

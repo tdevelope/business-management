@@ -23,6 +23,11 @@ export const appointmentsApi = {
     const response = await httpClient.post<Appointment>("/appointments", data)
     return response.data
   },
+  
+  getAll: async (): Promise<Appointment[]> => {
+    const response = await httpClient.get<Appointment[]>("/appointments");
+    return response.data;
+  },
 
   getForDate: async (date: string): Promise<Appointment[]> => {
     const response = await httpClient.get<Appointment[]>(`/appointments/date?date=${date}`)
