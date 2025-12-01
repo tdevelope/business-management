@@ -12,7 +12,7 @@ export class AppointmentsService {
   private readonly CLOSE_TIME = "17:00";
   private readonly MAX_DAYS = 90;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async createAppointment(dto: CreateAppointmentDto, userId: number) {
     const { serviceId, date, startTime } = dto;
@@ -94,6 +94,16 @@ export class AppointmentsService {
         service: true,
         user: true,
       },
+    });
+
+    return this.updateExpiredAppointments(appointments);
+  }
+
+  async getMyAppointments(userId: number) {
+    const appointments = await this.prisma.appointment.findMany({
+      where: { userId },
+      orderBy: { startTime: "asc" },
+      include: { service: true },
     });
 
     return this.updateExpiredAppointments(appointments);
@@ -216,37 +226,37 @@ export class AppointmentsService {
     }
 
     if (possibleSuggestions.length === 0) {
-    return [];
+      return [];
     }
 
     const futureSuggestions = possibleSuggestions.filter(
-    (s) => s.start >= now
+      (s) => s.start >= now
     );
 
     if (futureSuggestions.length === 0) {
-    return [];
+      return [];
     }
 
     const MAX_OFFSET_MINUTES = 240; // 4 hours before/after
 
     const inRangeSuggestions = futureSuggestions.filter((s) => {
-    const diffMinutes =
+      const diffMinutes =
         Math.abs(s.start.getTime() - preferredDateTime.getTime()) / (1000 * 60);
-        return diffMinutes <= MAX_OFFSET_MINUTES;
+      return diffMinutes <= MAX_OFFSET_MINUTES;
     });
 
     if (inRangeSuggestions.length === 0) {
-    return [];
+      return [];
     }
 
     inRangeSuggestions.sort(
-    (a, b) =>
+      (a, b) =>
         Math.abs(a.start.getTime() - preferredDateTime.getTime()) -
         Math.abs(b.start.getTime() - preferredDateTime.getTime())
     );
 
     return inRangeSuggestions.slice(0, 3);
-}
+  }
 
   private async updateExpiredAppointments(appointments: any[]) {
     const now = new Date();

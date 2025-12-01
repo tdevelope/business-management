@@ -34,6 +34,11 @@ export const appointmentsApi = {
     return response.data
   },
 
+  getMy: async (): Promise<Appointment[]> => {
+    const response = await httpClient.get<Appointment[]>("/appointments/my")
+    return response.data
+  },
+
   delete: async (id: string): Promise<void> => {
     await httpClient.delete(`/appointments/${id}`)
   },

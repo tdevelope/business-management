@@ -1,22 +1,15 @@
 "use client"
-
-import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { format } from "date-fns"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Card, CardContent } from "@/components/ui/card"
 import { appointmentsApi } from "@/api/appointments"
-import { Calendar } from "lucide-react"
 
 function MyAppointmentsContent() {
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"))
 
   const { data: appointments, isLoading } = useQuery({
-    queryKey: ["appointments", selectedDate],
-    queryFn: () => appointmentsApi.getForDate(selectedDate),
+    queryKey: ["myAppointments"],
+    queryFn: appointmentsApi.getMy
   })
 
   return (
@@ -27,29 +20,7 @@ function MyAppointmentsContent() {
           <p className="text-muted-foreground">View and manage your appointments</p>
         </div>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Select Date</CardTitle>
-            <CardDescription>View appointments for a specific date</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4 items-end">
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="date">Date</Label>
-                <Input id="date" type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
-              </div>
-              <Button onClick={() => setSelectedDate(format(new Date(), "yyyy-MM-dd"))}>Today</Button>
-            </div>
-          </CardContent>
-        </Card>
-
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Appointments for {format(new Date(selectedDate), "PPP")}
-            </CardTitle>
-          </CardHeader>
           <CardContent>
             {isLoading ? (
               <p className="text-muted-foreground">Loading...</p>
@@ -61,7 +32,7 @@ function MyAppointmentsContent() {
                       <div>
                         <h3 className="font-semibold text-lg">{apt.service?.name || "Service"}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {format(new Date(apt.startTime), "p")} - {format(new Date(apt.endTime), "p")}
+                          {format(new Date(apt.startTime), "PPP")} –  {format(new Date(apt.startTime), "p")} to {format(new Date(apt.endTime), "p")}
                         </p>
                       </div>
                       <span
@@ -88,7 +59,7 @@ function MyAppointmentsContent() {
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground text-center py-8">No appointments for this date</p>
+              <p className="text-muted-foreground text-center py-8">You have no appointments</p>
             )}
           </CardContent>
         </Card>
