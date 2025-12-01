@@ -9,7 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { businessSettingsApi, type BusinessSettings } from "@/api/businessSettings"
+import { businessSettingsApi } from "@/api/businessSettings"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { BlockedTimesManager } from "./BlockedTimesManager"
 
 type FormValues = {
     workingDays: number[]
@@ -122,6 +124,21 @@ function BusinessSettingsContent() {
                         <CardDescription>These rules affect all appointment logic.</CardDescription>
                     </CardHeader>
                     <CardContent>
+                        <div className="flex justify-start mb-4 mt-1">
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button variant="outline">Manage Blocked Times</Button>
+                                </DialogTrigger>
+
+                                <DialogContent className="max-w-2xl">
+                                    <DialogHeader>
+                                        <DialogTitle>Blocked Times</DialogTitle>
+                                    </DialogHeader>
+                                    <BlockedTimesManager />
+                                </DialogContent>
+                            </Dialog>
+                        </div>
+
                         <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
                             {/* Working days */}
                             <div className="space-y-2">
