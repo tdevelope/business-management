@@ -68,7 +68,7 @@ function AdminDashboardContent() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-3 gap-6">
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
@@ -106,6 +106,25 @@ function AdminDashboardContent() {
               </Button>
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Settings className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>Business Settings</CardTitle>
+                  <CardDescription>Opening hours & booking rules</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Button asChild className="w-full">
+                <Link href="/admin/business-settings">Open Settings</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
         </div>
       </div>
     </div>
