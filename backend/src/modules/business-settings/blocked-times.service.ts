@@ -6,7 +6,7 @@ import { UpdateBlockedTimeDto } from "./dto/update-blocked-time.dto";
 
 @Injectable()
 export class BlockedTimesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   findAll() {
     return this.prisma.blockedTime.findMany({
@@ -14,7 +14,28 @@ export class BlockedTimesService {
     });
   }
 
-  create(dto: CreateBlockedTimeDto) {
+  async create(dto: CreateBlockedTimeDto) {
+    const bStart = new Date(dto.startTime);
+    const bEnd = new Date(dto.endTime);
+
+    const overlappingAppointments = await this.prisma.appointment.findMany({
+      where: {
+        startTime: { lt: bEnd },
+        endTime: { gt: bStart },
+        status: "scheduled",
+      },
+    });
+
+    for (const appt of overlappingAppointments) {
+      await this.prisma.appointment.update({
+        where: { id: appt.id },
+        data: {
+          status: "cancelled",
+          // TODO: send cancellation email to user
+        },
+      });
+    }
+
     return this.prisma.blockedTime.create({
       data: {
         startTime: new Date(dto.startTime),

@@ -12,7 +12,7 @@ export class AppointmentsService {
   constructor(
     private prisma: PrismaService,
     private businessSettings: BusinessSettingsService
-  ) {}
+  ) { }
 
   async createAppointment(dto: CreateAppointmentDto, userId: number) {
     const { serviceId, date, startTime } = dto;
@@ -31,6 +31,20 @@ export class AppointmentsService {
 
     const start = new Date(y, m - 1, d, hh, mm);
     const end = new Date(start.getTime() + service.duration * 60000);
+
+    // --- Blocked times check ---
+    const blocked = await this.getBlockedTimesForDate(date);
+
+    const blockedOverlap = blocked.some(b => {
+      const bStart = new Date(b.startTime);
+      const bEnd = new Date(b.endTime);
+      return start < bEnd && end > bStart;
+    });
+
+    if (blockedOverlap) {
+      throw new BadRequestException("This time is blocked");
+    }
+
 
     const now = new Date();
     if (start < now) {
@@ -147,6 +161,19 @@ export class AppointmentsService {
     const start = new Date(y, m - 1, d, hh, mm);
     const end = new Date(start.getTime() + service.duration * 60000);
 
+    // --- Blocked times check ---
+    const blocked = await this.getBlockedTimesForDate(date);
+
+    const blockedOverlap = blocked.some(b => {
+      const bStart = new Date(b.startTime);
+      const bEnd = new Date(b.endTime);
+      return start < bEnd && end > bStart;
+    });
+
+    if (blockedOverlap) {
+      return false
+    }
+
     const { openDate, closeDate } = this.getBusinessWindowForDate(y, m, d, settings);
 
     if (start < openDate || end > closeDate) {
@@ -207,6 +234,19 @@ export class AppointmentsService {
         end: new Date(a.endTime),
       }))
       .sort((a, b) => a.start.getTime() - b.start.getTime());
+
+    // --- Add blocked times to busySlots ---
+    const blocked = await this.getBlockedTimesForDate(date);
+
+    for (const b of blocked) {
+      busySlots.push({
+        start: new Date(b.startTime),
+        end: new Date(b.endTime)
+      });
+    }
+
+    // re-sort including blocked slots
+    busySlots.sort((a, b) => a.start.getTime() - b.start.getTime());
 
     const freeSlots: { start: Date; end: Date }[] = [];
     let current = new Date(openDate);
@@ -277,6 +317,19 @@ export class AppointmentsService {
 
   private async getBusinessSettings() {
     return await this.businessSettings.getSettings();
+  }
+
+  private async getBlockedTimesForDate(date: string) {
+    const { y, m, d } = this.parseDateParts(date);
+
+    const dayStart = new Date(y, m - 1, d, 0, 0, 0);
+    const dayEnd = new Date(y, m - 1, d, 23, 59, 59, 999);
+
+    return this.prisma.blockedTime.findMany({
+      where: {
+        startTime: { gte: dayStart, lte: dayEnd }
+      }
+    });
   }
 
   private async updateExpiredAppointments(appointments: any[]) {
