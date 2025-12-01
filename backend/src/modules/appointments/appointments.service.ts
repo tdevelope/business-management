@@ -4,18 +4,19 @@ import { CreateAppointmentDto } from "./dto/create-appointment.dto";
 import { GetAppointmentsByDateDto } from "./dto/get-appointments-by-date.dto";
 import { CheckAvailabilityDto } from "./dto/check-availability.dto";
 import { GetSuggestionsDto } from "./dto/get-suggestions.dto";
+import { BusinessSettingsService } from "../business-settings/business-settings.service";
 
 @Injectable()
 export class AppointmentsService {
-  private readonly WORKING_DAYS = [0, 1, 2, 3, 4];
-  private readonly OPEN_TIME = "09:00";
-  private readonly CLOSE_TIME = "17:00";
-  private readonly MAX_DAYS = 90;
 
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private businessSettings: BusinessSettingsService
+  ) {}
 
   async createAppointment(dto: CreateAppointmentDto, userId: number) {
     const { serviceId, date, startTime } = dto;
+    const settings = await this.getBusinessSettings();
 
     const service = await this.prisma.service.findUnique({
       where: { id: serviceId },
@@ -37,13 +38,13 @@ export class AppointmentsService {
     }
 
     const diffDays = (start.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-    if (diffDays > this.MAX_DAYS) {
+    if (diffDays > settings.maxAdvanceBookingDays) {
       throw new BadRequestException(
-        `Cannot book more than ${this.MAX_DAYS} days in advance`
+        `Cannot book more than ${settings.maxAdvanceBookingDays} days in advance`
       );
     }
 
-    const { openDate, closeDate } = this.getBusinessWindowForDate(y, m, d);
+    const { openDate, closeDate } = this.getBusinessWindowForDate(y, m, d, settings);
 
     if (start < openDate || end > closeDate) {
       throw new BadRequestException("Appointment is outside business hours");
@@ -138,13 +139,15 @@ export class AppointmentsService {
       return false;
     }
 
+    const settings = await this.getBusinessSettings();
+
     const { y, m, d } = this.parseDateParts(date);
     const { hh, mm } = this.validateTimeString(startTime);
 
     const start = new Date(y, m - 1, d, hh, mm);
     const end = new Date(start.getTime() + service.duration * 60000);
 
-    const { openDate, closeDate } = this.getBusinessWindowForDate(y, m, d);
+    const { openDate, closeDate } = this.getBusinessWindowForDate(y, m, d, settings);
 
     if (start < openDate || end > closeDate) {
       throw new BadRequestException("Appointment is outside business hours");
@@ -177,9 +180,11 @@ export class AppointmentsService {
       );
     }
 
-    if (diffDays > this.MAX_DAYS) {
+    const settings = await this.getBusinessSettings();
+
+    if (diffDays > settings.maxAdvanceBookingDays) {
       throw new BadRequestException(
-        `Cannot generate suggestions more than ${this.MAX_DAYS} days in advance`
+        `Cannot generate suggestions more than ${settings.maxAdvanceBookingDays} days in advance`
       );
     }
 
@@ -192,7 +197,7 @@ export class AppointmentsService {
 
     const duration = service.duration;
 
-    const { openDate, closeDate } = this.getBusinessWindowForDate(y, m, d);
+    const { openDate, closeDate } = this.getBusinessWindowForDate(y, m, d, settings);
 
     const appointments = await this.getForDate({ date });
     const busySlots = appointments
@@ -270,6 +275,10 @@ export class AppointmentsService {
     return inRangeSuggestions.slice(0, 3);
   }
 
+  private async getBusinessSettings() {
+    return await this.businessSettings.getSettings();
+  }
+
   private async updateExpiredAppointments(appointments: any[]) {
     const now = new Date();
 
@@ -308,15 +317,23 @@ export class AppointmentsService {
   private getBusinessWindowForDate(
     y: number,
     m: number,
-    d: number
+    d: number,
+    settings: any
   ): { openDate: Date; closeDate: Date } {
+
+    const workingDays = settings.workingDays as number[];
+    const { openTime, closeTime } = settings.openingHours as {
+      openTime: string;
+      closeTime: string;
+    };
+
     const dayOfWeek = new Date(y, m - 1, d).getDay();
-    if (!this.WORKING_DAYS.includes(dayOfWeek)) {
+    if (!workingDays.includes(dayOfWeek)) {
       throw new BadRequestException("The business is closed on this day");
     }
 
-    const [openH, openM] = this.OPEN_TIME.split(":").map(Number);
-    const [closeH, closeM] = this.CLOSE_TIME.split(":").map(Number);
+    const [openH, openM] = openTime.split(":").map(Number);
+    const [closeH, closeM] = closeTime.split(":").map(Number);
 
     const openDate = new Date(y, m - 1, d, openH, openM);
     const closeDate = new Date(y, m - 1, d, closeH, closeM);
