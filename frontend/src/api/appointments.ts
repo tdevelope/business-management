@@ -23,6 +23,11 @@ export const appointmentsApi = {
     const response = await httpClient.post<Appointment>("/appointments", data)
     return response.data
   },
+  
+  getAll: async (): Promise<Appointment[]> => {
+    const response = await httpClient.get<Appointment[]>("/appointments");
+    return response.data;
+  },
 
   getForDate: async (date: string): Promise<Appointment[]> => {
     const response = await httpClient.get<Appointment[]>(`/appointments/date?date=${date}`)
@@ -31,6 +36,11 @@ export const appointmentsApi = {
 
   update: async (id: string, data: Partial<Appointment>): Promise<Appointment> => {
     const response = await httpClient.put<Appointment>(`/appointments/${id}`, data)
+    return response.data
+  },
+
+  getMy: async (): Promise<Appointment[]> => {
+    const response = await httpClient.get<Appointment[]>("/appointments/my")
     return response.data
   },
 

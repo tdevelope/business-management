@@ -17,9 +17,38 @@ export class AppointmentsController {
         return this.appointmentsService.createAppointment(dto, userId);
     }
 
+    @UseGuards(JwtAuthGuard)
+    @Get()
+    async getAllAppointments(@Req() req) {
+        if (req.user.role !== 'admin') {
+            throw new ForbiddenException('Access denied');
+        }
+        return this.appointmentsService.getAllAppointments();
+    }
+
+    @UseGuards(JwtAuthGuard)
     @Get('date')
-    async getAppointmentsByDate(@Query() dto: GetAppointmentsByDateDto) {
+    async getAppointmentsByDate(@Query() dto: GetAppointmentsByDateDto, @Req() req) {
+        if (req.user.role !== 'admin') {
+            throw new ForbiddenException("Access denied");
+        }
         return this.appointmentsService.getForDate(dto);
+    }
+    
+    @UseGuards(JwtAuthGuard)
+    @Get('my')
+    async getMyAppointments(@Req() req) {
+        const userId = req.user.id;
+        return this.appointmentsService.getMyAppointments(userId);
+    }
+    
+    @UseGuards(JwtAuthGuard)
+    @Delete(':id')
+    async deleteAppointment(@Param('id') id: string, @Req() req) {
+        if (req.user.role !== 'admin') {
+            throw new ForbiddenException('Access denied');
+        }
+        return this.appointmentsService.delete(+id);
     }
 
     @Post('checkAvailability')
@@ -30,15 +59,6 @@ export class AppointmentsController {
     @Post('getSuggestions')
     async getSuggestions(@Body() dto: GetSuggestionsDto) {
         return this.appointmentsService.getSuggestions(dto);
-    }
-
-    @UseGuards(JwtAuthGuard)
-    @Delete(':id')
-    async deleteAppointment(@Param('id') id: string, @Req() req) {
-        if (req.user.role !== 'admin') {
-            throw new ForbiddenException('Access denied');
-        }
-        return this.appointmentsService.delete(+id);
     }
 
 }
