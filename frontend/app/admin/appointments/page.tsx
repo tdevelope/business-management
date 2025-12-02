@@ -30,6 +30,7 @@ function AppointmentsCalendarContent() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
   const [currentDate, setCurrentDate] = useState(new Date())
   const [viewMode, setViewMode] = useState<"day" | "week" | "month">("month")
+  const [isEditing, setIsEditing] = useState(false)
 
   const [formData, setFormData] = useState({
     serviceId: 0,
@@ -87,6 +88,7 @@ function AppointmentsCalendarContent() {
   })
 
   const handleOpenDialog = (appointment?: Appointment) => {
+    setIsEditing(false)
     if (appointment) {
       setSelectedAppointment(appointment)
       setFormData({
@@ -131,6 +133,28 @@ function AppointmentsCalendarContent() {
         data: { status: status as any },
       })
     }
+  }
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedAppointment) return
+
+    const selectedService = services?.find(s => Number(s.id) === formData.serviceId)
+    if (selectedService) {
+      const durationMinutes = selectedService.duration
+      const end = new Date(formData.startTime)
+      end.setMinutes(end.getMinutes() + durationMinutes)
+      setFormData(prev => ({ ...prev, endTime: end.toISOString() }))
+    }
+
+    updateMutation.mutate({
+      id: selectedAppointment.id,
+      data: {
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+      },
+    })
+    setIsEditing(false)
   }
 
   const handleDelete = () => {
@@ -309,15 +333,14 @@ function AppointmentsCalendarContent() {
                             )}
                           </div>
                           <span
-                            className={`px-3 py-1 rounded-full text-sm ${
-                              apt.status === "confirmed"
-                                ? "bg-green-100 text-green-800"
-                                : apt.status === "pending"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : apt.status === "cancelled"
-                                    ? "bg-red-100 text-red-800"
-                                    : "bg-blue-100 text-blue-800"
-                            }`}
+                            className={`px-3 py-1 rounded-full text-sm ${apt.status === "confirmed"
+                              ? "bg-green-100 text-green-800"
+                              : apt.status === "pending"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : apt.status === "cancelled"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-blue-100 text-blue-800"
+                              }`}
                           >
                             {apt.status}
                           </span>
@@ -338,9 +361,8 @@ function AppointmentsCalendarContent() {
                   return (
                     <div
                       key={day.toISOString()}
-                      className={`border rounded-lg p-2 min-h-[120px] bg-background ${
-                        !isCurrentMonth && viewMode === "month" ? "opacity-50" : ""
-                      }`}
+                      className={`border rounded-lg p-2 min-h-[120px] bg-background ${!isCurrentMonth && viewMode === "month" ? "opacity-50" : ""
+                        }`}
                     >
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-xs font-semibold">
@@ -385,54 +407,96 @@ function AppointmentsCalendarContent() {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{selectedAppointment ? "Appointment Details" : "Create Appointment"}</DialogTitle>
+              <DialogTitle>{selectedAppointment ? (isEditing ? "Edit Appointment" : "Appointment Details") : "Create Appointment"}</DialogTitle>
               <DialogDescription>
-                {selectedAppointment ? "View and manage this appointment" : "Schedule a new appointment manually"}
+                {selectedAppointment
+                  ? isEditing
+                    ? "Edit the appointment details"
+                    : "View and manage this appointment"
+                  : "Schedule a new appointment manually"}
               </DialogDescription>
             </DialogHeader>
 
             {selectedAppointment ? (
-              <div className="space-y-4 py-4">
-                <div>
-                  <Label>Service</Label>
-                  <p className="text-sm">{selectedAppointment.service?.name}</p>
+              isEditing ? (
+                <form onSubmit={handleEditSubmit} className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="service">Service</Label>
+                    <Select
+                      value={String(formData.serviceId)}
+                      onValueChange={(value) => setFormData({ ...formData, serviceId: Number(value) })}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a service" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {services?.map((service) => (
+                          <SelectItem key={service.id} value={String(service.id)}>
+                            {service.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="startTime">Start Time</Label>
+                    <Input
+                      id="startTime"
+                      type="datetime-local"
+                      value={formData.startTime}
+                      onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={updateMutation.isPending}>
+                      Save
+                    </Button>
+                  </DialogFooter>
+                </form>
+              ) : (
+                <div className="space-y-4 py-4">
+                  <div>
+                    <Label>Service</Label>
+                    <p className="text-sm">{selectedAppointment.service?.name}</p>
+                  </div>
+                  <div>
+                    <Label>Client</Label>
+                    <p className="text-sm">
+                      {selectedAppointment.user?.firstName} {selectedAppointment.user?.lastName}
+                    </p>
+                  </div>
+                  <div>
+                    <Label>Time</Label>
+                    <p className="text-sm">
+                      {format(new Date(selectedAppointment.startTime), "PPp")} - {format(new Date(selectedAppointment.endTime), "p")}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select value={selectedAppointment.status} onValueChange={handleStatusChange}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="confirmed">Confirmed</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <DialogFooter className="gap-2">
+                    <Button variant="outline" onClick={() => setIsEditing(true)}>Edit</Button>
+                    <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+                    <Button variant="outline" onClick={handleCloseDialog}>Close</Button>
+                  </DialogFooter>
                 </div>
-                <div>
-                  <Label>Client</Label>
-                  <p className="text-sm">
-                    {selectedAppointment.user?.firstName} {selectedAppointment.user?.lastName}
-                  </p>
-                </div>
-                <div>
-                  <Label>Time</Label>
-                  <p className="text-sm">
-                    {format(new Date(selectedAppointment.startTime), "PPp")} -{" "}
-                    {format(new Date(selectedAppointment.endTime), "p")}
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select value={selectedAppointment.status} onValueChange={handleStatusChange}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="confirmed">Confirmed</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <DialogFooter className="gap-2">
-                  <Button variant="destructive" onClick={handleDelete}>
-                    Delete
-                  </Button>
-                  <Button variant="outline" onClick={handleCloseDialog}>
-                    Close
-                  </Button>
-                </DialogFooter>
-              </div>
+              )
             ) : (
               <form onSubmit={handleSubmit}>
                 <div className="space-y-4 py-4">
