@@ -41,6 +41,7 @@ export interface CreateAppointmentDto {
   serviceId: Number
   date: string
   startTime: string
+  userId?: string
 }
 
 export interface CheckAvailabilityDto {

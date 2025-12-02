@@ -21,6 +21,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { appointmentsApi } from "@/api/appointments"
 import { servicesApi } from "@/api/services"
+import { usersApi } from "@/api/users"
 import { useToast } from "@/hooks/use-toast"
 import { Calendar, Plus } from "lucide-react"
 import type { Appointment } from "@/types"
@@ -31,6 +32,7 @@ function AppointmentsCalendarContent() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [viewMode, setViewMode] = useState<"day" | "week" | "month">("month")
   const [isEditing, setIsEditing] = useState(false)
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     serviceId: 0,
@@ -50,6 +52,12 @@ function AppointmentsCalendarContent() {
     queryKey: ["services"],
     queryFn: servicesApi.getAll,
   })
+
+  const { data: customers } = useQuery({
+    queryKey: ["customers"],
+    queryFn: usersApi.getAllCustomers,
+  });
+
 
   const createMutation = useMutation({
     mutationFn: appointmentsApi.create,
@@ -119,11 +127,17 @@ function AppointmentsCalendarContent() {
       return
     }
 
-    createMutation.mutate({
+    const payload: any = {
       serviceId: Number(formData.serviceId),
       date: datePart,
       startTime: time,
-    })
+    };
+
+    if (selectedCustomerId) {
+      payload.userId = Number(selectedCustomerId);
+    }
+
+    createMutation.mutate(payload);
   }
 
   const handleStatusChange = (status: string) => {
@@ -504,6 +518,23 @@ function AppointmentsCalendarContent() {
               <form onSubmit={handleSubmit}>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
+                    <Select
+                      value={selectedCustomerId || ""}
+                      onValueChange={(value) => setSelectedCustomerId(value)}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a client" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {customers?.map((customer) => (
+                          <SelectItem key={customer.id} value={customer.id}>
+                            {customer.firstName} {customer.lastName} ({customer.email})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
                     <Label htmlFor="service">Service</Label>
                     <Select
                       value={String(formData.serviceId)}

@@ -6,6 +6,7 @@ import {
   Patch,
   Post,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -16,8 +17,8 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  async getAllUsers() {
-    return this.usersService.getAllUsers();
+  async getAllUsers(@Query('role') role?: string) {
+    return this.usersService.getAllUsers(role);
   }
 
   @Post()

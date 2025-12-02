@@ -8,7 +8,12 @@ import * as bcrypt from 'bcrypt';
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async getAllUsers() {
+  async getAllUsers(role?: string) {
+    if (role) {
+      return this.prisma.user.findMany({
+        where: { role },
+      });
+    }
     return this.prisma.user.findMany();
   }
 
