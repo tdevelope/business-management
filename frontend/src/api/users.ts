@@ -7,6 +7,11 @@ export const usersApi = {
     return response.data
   },
 
+  getMe: async (): Promise<User> => {
+    const response = await httpClient.get<User>("/users/me")
+    return response.data
+  },
+
   create: async (data: Partial<User>): Promise<User> => {
     const response = await httpClient.post<User>("/users", data)
     return response.data
