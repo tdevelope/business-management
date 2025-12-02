@@ -20,6 +20,6 @@ export class CreateAppointmentDto {
   startTime!: string; // HH:mm
 
   @IsOptional()
-  @IsUUID()
-  userId?: string;
+  @IsInt()
+  userId?: number;
 }
