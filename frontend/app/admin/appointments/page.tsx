@@ -25,6 +25,8 @@ import { usersApi } from "@/api/users"
 import { useToast } from "@/hooks/use-toast"
 import { Calendar, Plus } from "lucide-react"
 import type { Appointment } from "@/types"
+import { AdminWaitlist } from "../appointments/adminWaitlist"
+
 
 function AppointmentsCalendarContent() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -32,7 +34,8 @@ function AppointmentsCalendarContent() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [viewMode, setViewMode] = useState<"day" | "week" | "month">("month")
   const [isEditing, setIsEditing] = useState(false)
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
+  const [isWaitlistOpen, setIsWaitlistOpen] = useState(false)
 
   const [formData, setFormData] = useState({
     serviceId: 0,
@@ -56,7 +59,7 @@ function AppointmentsCalendarContent() {
   const { data: customers } = useQuery({
     queryKey: ["customers"],
     queryFn: usersApi.getAllCustomers,
-  });
+  })
 
 
   const createMutation = useMutation({
@@ -106,6 +109,7 @@ function AppointmentsCalendarContent() {
       })
     } else {
       setSelectedAppointment(null)
+      setSelectedCustomerId(null)
       setFormData({ serviceId: 0, startTime: "", endTime: "" })
     }
     setIsDialogOpen(true)
@@ -114,6 +118,7 @@ function AppointmentsCalendarContent() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false)
     setSelectedAppointment(null)
+    setSelectedCustomerId(null)
     setFormData({ serviceId: 0, startTime: "", endTime: "" })
   }
 
@@ -131,13 +136,13 @@ function AppointmentsCalendarContent() {
       serviceId: Number(formData.serviceId),
       date: datePart,
       startTime: time,
-    };
-
-    if (selectedCustomerId) {
-      payload.userId = Number(selectedCustomerId);
     }
 
-    createMutation.mutate(payload);
+    if (selectedCustomerId) {
+      payload.userId = Number(selectedCustomerId)
+    }
+
+    createMutation.mutate(payload)
   }
 
   const handleStatusChange = (status: string) => {
@@ -257,10 +262,16 @@ function AppointmentsCalendarContent() {
             <h1 className="text-4xl font-bold mb-2">Appointments Calendar</h1>
             <p className="text-muted-foreground">View and manage all appointments</p>
           </div>
-          <Button onClick={() => handleOpenDialog()}>
-            <Plus className="mr-2 h-4 w-4" />
-            New Appointment
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => handleOpenDialog()}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Appointment
+            </Button>
+            <Button onClick={() => setIsWaitlistOpen(true)}>
+              <Calendar className="mr-2 h-4 w-4" />
+              Manage Waitlist
+            </Button>
+          </div>
         </div>
 
         <Card className="mb-6">
@@ -422,6 +433,7 @@ function AppointmentsCalendarContent() {
           </CardContent>
         </Card>
 
+        {/* Dialog for Appointment Details/Edit/Create */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent>
             <DialogHeader>
@@ -518,6 +530,7 @@ function AppointmentsCalendarContent() {
               <form onSubmit={handleSubmit}>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
+                    <Label htmlFor="customer">Client</Label>
                     <Select
                       value={selectedCustomerId || ""}
                       onValueChange={(value) => setSelectedCustomerId(value)}
@@ -534,7 +547,9 @@ function AppointmentsCalendarContent() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
 
+                  <div className="space-y-2">
                     <Label htmlFor="service">Service</Label>
                     <Select
                       value={String(formData.serviceId)}
@@ -553,6 +568,7 @@ function AppointmentsCalendarContent() {
                       </SelectContent>
                     </Select>
                   </div>
+                  
                   <div className="space-y-2">
                     <Label htmlFor="startTime">Start Time</Label>
                     <Input
@@ -574,6 +590,17 @@ function AppointmentsCalendarContent() {
                 </DialogFooter>
               </form>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog for Waitlist Management */}
+        <Dialog open={isWaitlistOpen} onOpenChange={setIsWaitlistOpen}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>Waitlist Management</DialogTitle>
+              <DialogDescription>View and manage all waitlist entries</DialogDescription>
+            </DialogHeader>
+            <AdminWaitlist services={services || []} />
           </DialogContent>
         </Dialog>
       </div>

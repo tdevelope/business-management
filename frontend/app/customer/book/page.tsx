@@ -11,12 +11,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { servicesApi } from "@/api/services"
 import { appointmentsApi } from "@/api/appointments"
+import { waitlistApi } from "@/api/waitlist"
 import { useToast } from "@/hooks/use-toast"
-import { ArrowLeft, ArrowRight, Check } from "lucide-react"
+import { ArrowLeft, ArrowRight, Check, Clock } from "lucide-react"
 import type { Service, AppointmentSuggestion } from "@/types"
-import { get } from "http"
 
 function BookingWizardContent() {
   const [step, setStep] = useState(1)
@@ -25,6 +26,8 @@ function BookingWizardContent() {
   const [preferredTime, setPreferredTime] = useState("")
   const [suggestions, setSuggestions] = useState<AppointmentSuggestion[]>([])
   const [selectedSlot, setSelectedSlot] = useState<AppointmentSuggestion | null>(null)
+  const [showWaitlistOption, setShowWaitlistOption] = useState(false)
+  const [waitlistNotes, setWaitlistNotes] = useState("")
 
   const router = useRouter()
   const { toast } = useToast()
@@ -39,6 +42,7 @@ function BookingWizardContent() {
     mutationFn: appointmentsApi.getSuggestions,
     onSuccess: (data) => {
       setSuggestions(data)
+      setShowWaitlistOption(false)
       setStep(3)
     },
     onError: (error: Error) => {
@@ -59,6 +63,25 @@ function BookingWizardContent() {
         description: "Appointment booked successfully!",
       })
       router.push("/customer/appointments")
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      })
+    },
+  })
+
+  const joinWaitlistMutation = useMutation({
+    mutationFn: waitlistApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["myWaitlist"] })
+      toast({
+        title: "Added to Waitlist",
+        description: "You've been added to the waitlist. We'll notify you when a slot becomes available.",
+      })
+      router.push("/customer/my-waitlist")
     },
     onError: (error: Error) => {
       toast({
@@ -92,17 +115,29 @@ function BookingWizardContent() {
 
   const handleConfirm = () => {
     if (selectedService && selectedSlot) {
-      const date = selectedSlot.start.split("T")[0];
-      const slotDate = new Date(selectedSlot.start);
-      const hh = slotDate.getHours().toString().padStart(2, "0");
-      const mm = slotDate.getMinutes().toString().padStart(2, "0");
-      const startTime = `${hh}:${mm}`;
-
+      const date = selectedSlot.start.split("T")[0]
+      const slotDate = new Date(selectedSlot.start)
+      const hh = slotDate.getHours().toString().padStart(2, "0")
+      const mm = slotDate.getMinutes().toString().padStart(2, "0")
+      const startTime = `${hh}:${mm}`
 
       createAppointmentMutation.mutate({
-        serviceId: selectedService.id,
+        serviceId: Number(selectedService.id),
         date,
         startTime,
+      })
+    }
+  }
+
+  const handleJoinWaitlist = () => {
+    if (selectedService && selectedDate && preferredTime) {
+      // Create full ISO datetime string for both fields
+      const dateTimeString = `${selectedDate}T${preferredTime}:00.000Z`
+      
+      joinWaitlistMutation.mutate({
+        serviceId: Number(selectedService.id),
+        preferredDate: dateTimeString,  // Send as DateTime
+        preferredTime: dateTimeString,
       })
     }
   }
@@ -201,29 +236,143 @@ function BookingWizardContent() {
           </Card>
         )}
 
-        {/* Step 3: Pick Slot */}
+        {/* Step 3: Pick Slot or Join Waitlist */}
         {step === 3 && (
           <div className="space-y-4">
             <h2 className="text-2xl font-semibold">Available Time Slots</h2>
-            <div className="grid gap-4">
-              {suggestions.map((slot, index) => (
-                <Card
-                  key={index}
-                  className="cursor-pointer hover:border-primary transition-colors"
-                  onClick={() => handleSlotSelect(slot)}
-                >
-                  <CardContent className="flex items-center justify-between p-6">
-                    <div>
-                      <p className="font-semibold">{format(new Date(slot.start), "PPP")}</p>
-                      <p className="text-muted-foreground">
-                        {format(new Date(slot.start), "p")} - {format(new Date(slot.end), "p")}
-                      </p>
-                    </div>
-                    {slot.confidence && <span className="text-sm text-muted-foreground">{slot.confidence}</span>}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            
+            {suggestions.length > 0 ? (
+              <>
+                <div className="grid gap-4">
+                  {suggestions.map((slot, index) => (
+                    <Card
+                      key={index}
+                      className="cursor-pointer hover:border-primary transition-colors"
+                      onClick={() => handleSlotSelect(slot)}
+                    >
+                      <CardContent className="flex items-center justify-between p-6">
+                        <div>
+                          <p className="font-semibold">{format(new Date(slot.start), "PPP")}</p>
+                          <p className="text-muted-foreground">
+                            {format(new Date(slot.start), "p")} - {format(new Date(slot.end), "p")}
+                          </p>
+                        </div>
+                        {slot.confidence && <span className="text-sm text-muted-foreground">{slot.confidence}</span>}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                <div className="pt-4 border-t space-y-2">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    None of these times work for you?
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setStep(2)
+                        setSuggestions([])
+                      }}
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Try Different Time
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowWaitlistOption(true)}
+                    >
+                      <Clock className="mr-2 h-4 w-4" />
+                      Join Waitlist
+                    </Button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No Available Slots</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Sorry, there are no available time slots for your selected date and time.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setStep(2)
+                        setSuggestions([])
+                      }}
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Try Different Time
+                    </Button>
+                    <Button
+                      variant="default"
+                      onClick={() => setShowWaitlistOption(true)}
+                    >
+                      <Clock className="mr-2 h-4 w-4" />
+                      Join Waitlist
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Waitlist Form */}
+            {showWaitlistOption && (
+              <Card className="border-primary">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    Join Waitlist
+                  </CardTitle>
+                  <CardDescription>
+                    We'll notify you when a slot becomes available for your preferred date and time
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Service</Label>
+                    <p className="text-sm font-medium">{selectedService?.name}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Preferred Date</Label>
+                    <p className="text-sm font-medium">{format(new Date(selectedDate), "PPP")}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Preferred Time</Label>
+                    <p className="text-sm font-medium">{preferredTime}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">Additional Notes (Optional)</Label>
+                    <Textarea
+                      id="notes"
+                      placeholder="Any specific requirements or flexible times..."
+                      value={waitlistNotes}
+                      onChange={(e) => setWaitlistNotes(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => setShowWaitlistOption(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      onClick={handleJoinWaitlist}
+                      disabled={joinWaitlistMutation.isPending}
+                    >
+                      {joinWaitlistMutation.isPending ? "Joining..." : "Join Waitlist"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 
