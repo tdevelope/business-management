@@ -35,7 +35,7 @@ export const appointmentsApi = {
   },
 
   update: async (id: string, data: Partial<Appointment>): Promise<Appointment> => {
-    const response = await httpClient.put<Appointment>(`/appointments/${id}`, data)
+    const response = await httpClient.patch<Appointment>(`/appointments/${id}`, data)
     return response.data
   },
 

@@ -1,10 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { CreateAppointmentDto } from "./dto/create-appointment.dto";
 import { GetAppointmentsByDateDto } from "./dto/get-appointments-by-date.dto";
 import { CheckAvailabilityDto } from "./dto/check-availability.dto";
 import { GetSuggestionsDto } from "./dto/get-suggestions.dto";
 import { BusinessSettingsService } from "../business-settings/business-settings.service";
+import { UpdateAppointmentDto } from "./dto/update-appointment.dto";
 
 @Injectable()
 export class AppointmentsService {
@@ -135,6 +136,118 @@ export class AppointmentsService {
 
     return this.updateExpiredAppointments(appointments);
   }
+
+  async updateAppointment(id: number, dto: UpdateAppointmentDto, user: any) {
+    const appointment = await this.prisma.appointment.findUnique({
+      where: { id },
+      include: { service: true }
+    });
+
+    if (!appointment) {
+      throw new NotFoundException("Appointment not found");
+    }
+
+    if (user.role === "customer" && appointment.userId !== user.id) {
+      throw new ForbiddenException("You cannot edit this appointment");
+    }
+
+    // -------- admin flow (direct edit) ----------
+    if (user.role === "admin") {
+      if (!dto.startTime || !dto.endTime) {
+        throw new BadRequestException("Admin must send startTime and endTime");
+      }
+
+      const start = dto.startTime instanceof Date ? dto.startTime : new Date(dto.startTime);
+      const end = dto.endTime instanceof Date ? dto.endTime : new Date(dto.endTime);
+
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        throw new BadRequestException("Invalid startTime or endTime");
+      }
+
+      const dateStr = start.toISOString().split("T")[0];
+      const blocked = await this.getBlockedTimesForDate(dateStr);
+
+      const overlapBlocked = blocked.some(b => {
+        return start < new Date(b.endTime) && end > new Date(b.startTime);
+      });
+
+      if (overlapBlocked) {
+        throw new BadRequestException("This time is blocked");
+      }
+
+      const now = new Date();
+      if (start < now) {
+        throw new BadRequestException("Cannot move appointment to the past");
+      }
+
+      const settings = await this.getBusinessSettings();
+      const { y, m, d } = this.parseDateParts(dateStr);
+      const { openDate, closeDate } = this.getBusinessWindowForDate(y, m, d, settings);
+
+      if (start < openDate || end > closeDate) {
+        throw new BadRequestException("Appointment outside business hours");
+      }
+
+      const sameDayAppointments = await this.getForDate({ date: dateStr });
+
+      const overlap = sameDayAppointments.some(a => {
+        if (a.id === appointment.id) return false;
+        return start < new Date(a.endTime) && end > new Date(a.startTime);
+      });
+
+      if (overlap) {
+        throw new BadRequestException("This time overlaps another appointment");
+      }
+
+      return this.prisma.appointment.update({
+        where: { id },
+        data: {
+          startTime: start,
+          endTime: end,
+          date: new Date(dateStr)
+        }
+      });
+    }
+
+    // -------- customer flow (suggestions) ----------
+    if (!dto.date || !dto.preferredTime) {
+      throw new BadRequestException("date and preferredTime are required for customers");
+    }
+
+    const suggestions = await this.getSuggestions({
+      serviceId: appointment.serviceId,
+      date: dto.date,
+      preferredTime: dto.preferredTime
+    });
+
+    if (!suggestions.length) {
+      throw new BadRequestException("No available suggestions");
+    }
+
+    if (!dto.startTime) {
+      throw new BadRequestException("You must send the chosen startTime from suggestions");
+    }
+    const chosenTime = dto.startTime instanceof Date ? dto.startTime.getTime() : new Date(dto.startTime).getTime();
+    if (isNaN(chosenTime)) {
+      throw new BadRequestException("Invalid chosen startTime");
+    }
+
+    const chosen = suggestions.find(s => s.start.getTime() === chosenTime);
+
+    if (!chosen) {
+      throw new BadRequestException("Invalid suggestion selected");
+    }
+
+    return this.prisma.appointment.update({
+      where: { id },
+      data: {
+        startTime: chosen.start,
+        endTime: chosen.end,
+        date: new Date(dto.date)
+      }
+    });
+  }
+
 
   async delete(id: number) {
     return this.prisma.appointment.delete({

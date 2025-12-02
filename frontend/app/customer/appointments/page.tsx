@@ -5,11 +5,26 @@ import { ProtectedRoute } from "@/components/ProtectedRoute"
 import { Card, CardContent } from "@/components/ui/card"
 import { appointmentsApi } from "@/api/appointments"
 import { useState } from "react"
+import { Appointment, AppointmentSuggestion } from "@/src/types"
+import { useQueryClient } from "@tanstack/react-query"
+import { useToast } from "@/hooks/use-toast"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 function MyAppointmentsContent() {
 
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null)
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
+  const [formData, setFormData] = useState({
+    serviceId: "",
+    date: "",
+    preferredTime: "",
+  })
+  const [suggestions, setSuggestions] = useState<AppointmentSuggestion[]>([])
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const { data: appointments, isLoading } = useQuery({
     queryKey: ["myAppointments"],
@@ -28,6 +43,24 @@ function MyAppointmentsContent() {
     filtered = filtered.filter(
       (apt) => new Date(apt.startTime).getDate() === selectedDay
     )
+  }
+
+  interface UpdateAppointmentPayload {
+    date?: string
+    preferredTime?: string
+    startTime: string
+    endTime: string
+  }
+
+  const handleOpenDialog = (apt: Appointment) => {
+    setSelectedAppointment(apt)
+    setFormData({
+      serviceId: apt.service?.id ?? "",
+      date: format(new Date(apt.startTime), "yyyy-MM-dd"),
+      preferredTime: format(new Date(apt.startTime), "HH:mm"),
+    })
+    setSuggestions([])
+    setIsDialogOpen(true)
   }
 
 
@@ -88,7 +121,7 @@ function MyAppointmentsContent() {
               filtered.length > 0 ? (
                 <div className="space-y-4">
                   {filtered.map((apt) => (
-                    <div key={apt.id} className="border rounded-lg p-4">
+                    <div key={apt.id} className="border rounded-lg p-4" onClick={() => handleOpenDialog(apt)}>
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <h3 className="font-semibold text-lg">{apt.service?.name || "Service"}</h3>
@@ -123,10 +156,85 @@ function MyAppointmentsContent() {
                   No appointments match the selected filters
                 </p>
               )
-              ) : (
+            ) : (
               <p className="text-muted-foreground text-center py-8">You have no appointments</p>
-            )}    
+            )}
           </CardContent>
+          {isDialogOpen && selectedAppointment && (
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Appointment</DialogTitle>
+                  <DialogDescription>Select a new date and preferred time</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <label>Date</label>
+                    <input
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label>Preferred Time</label>
+                    <input
+                      type="time"
+                      value={formData.preferredTime}
+                      onChange={(e) => setFormData({ ...formData, preferredTime: e.target.value })}
+                    />
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!formData.date || !formData.preferredTime || !formData.serviceId) return
+                      const result = await appointmentsApi.getSuggestions({
+                        serviceId: formData.serviceId,
+                        date: formData.date,
+                        preferredTime: formData.preferredTime,
+                      })
+                      setSuggestions(result)
+                    }}
+                  >
+                    Get Suggestions
+                  </button>
+                  <div>
+                    {suggestions.map((s, idx) => (
+                      <button
+                        key={idx}
+                        onClick={async () => {
+                          if (!selectedAppointment) return
+                          try {
+                            await appointmentsApi.update(selectedAppointment.id, {
+                              date: formData.date,
+                              preferredTime: formData.preferredTime,
+                              startTime: s.start,
+                              endTime: s.end,
+                            } as UpdateAppointmentPayload)
+
+                            setIsDialogOpen(false)
+                            queryClient.invalidateQueries({ queryKey: ["myAppointments"] })
+
+                            toast({
+                              title: "Appointment updated",
+                              description: `Your appointment on ${format(new Date(s.start), "PPP p")} was updated successfully.`,
+                            })
+
+                          } catch (err: any) {
+                            console.error(err)
+                            alert(err.message || "Failed to update appointment")
+                          }
+                        }}
+                      >
+                        {format(new Date(s.start), "PPP p")} – {format(new Date(s.end), "p")}
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={() => setIsDialogOpen(false)}>Cancel</button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+
         </Card>
       </div>
     </div >

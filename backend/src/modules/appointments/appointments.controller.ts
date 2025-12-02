@@ -1,19 +1,20 @@
-import { Body, Controller, Get, Param, Post, Query, Req, UseGuards, Delete, ForbiddenException } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Query, Req, UseGuards, Delete, ForbiddenException, Patch } from "@nestjs/common";
 import { AppointmentsService } from "./appointments.service";
 import { CreateAppointmentDto } from "./dto/create-appointment.dto";
 import { GetAppointmentsByDateDto } from "./dto/get-appointments-by-date.dto";
 import { CheckAvailabilityDto } from "./dto/check-availability.dto";
 import { GetSuggestionsDto } from "./dto/get-suggestions.dto";
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { UpdateAppointmentDto } from "./dto/update-appointment.dto";
 
 @Controller('appointments')
 export class AppointmentsController {
-    constructor(private readonly appointmentsService: AppointmentsService) {}
+    constructor(private readonly appointmentsService: AppointmentsService) { }
 
     @UseGuards(JwtAuthGuard)
     @Post()
     async createAppointment(@Req() req, @Body() dto: CreateAppointmentDto) {
-        const userId = req.user.id; 
+        const userId = req.user.id;
         return this.appointmentsService.createAppointment(dto, userId);
     }
 
@@ -34,14 +35,25 @@ export class AppointmentsController {
         }
         return this.appointmentsService.getForDate(dto);
     }
-    
+
     @UseGuards(JwtAuthGuard)
     @Get('my')
     async getMyAppointments(@Req() req) {
         const userId = req.user.id;
         return this.appointmentsService.getMyAppointments(userId);
     }
-    
+
+    @UseGuards(JwtAuthGuard)
+    @Patch(':id')
+    async updateAppointment(
+        @Param('id') id: string,
+        @Body() dto: UpdateAppointmentDto,
+        @Req() req
+    ) {
+        const user = req.user;
+        return this.appointmentsService.updateAppointment(+id, dto, user);
+    }
+
     @UseGuards(JwtAuthGuard)
     @Delete(':id')
     async deleteAppointment(@Param('id') id: string, @Req() req) {
