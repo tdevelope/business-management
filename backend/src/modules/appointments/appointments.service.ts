@@ -6,299 +6,320 @@ import { CheckAvailabilityDto } from "./dto/check-availability.dto";
 import { GetSuggestionsDto } from "./dto/get-suggestions.dto";
 import { BusinessSettingsService } from "../business-settings/business-settings.service";
 import { UpdateAppointmentDto } from "./dto/update-appointment.dto";
+import { WaitlistService } from "../waitlist/waitlist.service";
 
 @Injectable()
 export class AppointmentsService {
 
   constructor(
     private prisma: PrismaService,
-    private businessSettings: BusinessSettingsService
+    private businessSettings: BusinessSettingsService,
+    private waitlistService: WaitlistService
   ) { }
 
   async createAppointment(dto: CreateAppointmentDto, userId: number, userRole: string) {
-      const { serviceId, date, startTime } = dto;
-      
-      let appointmentUserId = userId;
-      if (dto.userId) {
-        appointmentUserId = Number(dto.userId);
-      }
-      else if (userRole === 'admin') {
-          throw new BadRequestException("Admin must select a customer for the appointment");
-      }
+    const { serviceId, date, startTime } = dto;
 
-      const settings = await this.getBusinessSettings();
-
-      const service = await this.prisma.service.findUnique({
-        where: { id: serviceId },
-      });
-
-      if (!service) {
-        throw new NotFoundException("Service not found");
-      }
-
-      const { y, m, d } = this.parseDateParts(date);
-      const { hh, mm } = this.validateTimeString(startTime);
-
-      const start = new Date(y, m - 1, d, hh, mm);
-      const end = new Date(start.getTime() + service.duration * 60000);
-
-      // --- Blocked times check ---
-      const blocked = await this.getBlockedTimesForDate(date);
-
-      const blockedOverlap = blocked.some(b => {
-        const bStart = new Date(b.startTime);
-        const bEnd = new Date(b.endTime);
-        return start < bEnd && end > bStart;
-      });
-
-      if (blockedOverlap) {
-        throw new BadRequestException("This time is blocked");
-      }
-
-
-      const now = new Date();
-      if (start < now) {
-        throw new BadRequestException("Cannot book an appointment in the past");
-      }
-
-      const diffDays = (start.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-      if (diffDays > settings.maxAdvanceBookingDays) {
-        throw new BadRequestException(
-          `Cannot book more than ${settings.maxAdvanceBookingDays} days in advance`
-        );
-      }
-
-      const { openDate, closeDate } = this.getBusinessWindowForDate(y, m, d, settings);
-
-      if (start < openDate || end > closeDate) {
-        throw new BadRequestException("Appointment is outside business hours");
-      }
-
-      const isAvailable = await this.checkAvailability({
-        serviceId,
-        date,
-        startTime,
-      });
-
-      if (!isAvailable) {
-        throw new BadRequestException("This time slot is not available");
-      }
-
-      const pureDate = new Date(y, m - 1, d);
-
-      return this.prisma.appointment.create({
-        data: {
-          userId: appointmentUserId,
-          serviceId,
-          date: pureDate,
-          startTime: start,
-          endTime: end,
-          status: "scheduled",
-        },
-      });
+    let appointmentUserId = userId;
+    if (dto.userId) {
+      appointmentUserId = Number(dto.userId);
     }
-
-  async getAllAppointments() {
-      return this.prisma.appointment.findMany({
-        include: {
-          service: true,
-          user: true,
-        },
-        orderBy: {
-          startTime: "asc",
-        },
-      });
+    else if (userRole === 'admin') {
+      throw new BadRequestException("Admin must select a customer for the appointment");
     }
-
-  async getForDate(dto: GetAppointmentsByDateDto) {
-      const { date } = dto;
-
-      const { y, m, d } = this.parseDateParts(date);
-      const dayStart = new Date(y, m - 1, d, 0, 0, 0);
-      const dayEnd = new Date(y, m - 1, d, 23, 59, 59, 999);
-
-      const appointments = await this.prisma.appointment.findMany({
-        where: {
-          startTime: {
-            gte: dayStart,
-            lte: dayEnd,
-          },
-        },
-        orderBy: {
-          startTime: "asc",
-        },
-        include: {
-          service: true,
-          user: true,
-        },
-      });
-
-      return this.updateExpiredAppointments(appointments);
-    }
-
-  async getMyAppointments(userId: number) {
-      const appointments = await this.prisma.appointment.findMany({
-        where: { userId },
-        orderBy: { startTime: "asc" },
-        include: { service: true },
-      });
-
-      return this.updateExpiredAppointments(appointments);
-    }
-
-  async updateAppointment(id: number, dto: UpdateAppointmentDto, user: any) {
-      const appointment = await this.prisma.appointment.findUnique({
-        where: { id },
-        include: { service: true }
-      });
-
-      if (!appointment) {
-        throw new NotFoundException("Appointment not found");
-      }
-
-      if (user.role === "customer" && appointment.userId !== user.id) {
-        throw new ForbiddenException("You cannot edit this appointment");
-      }
-
-      // -------- admin flow (direct edit) ----------
-      if (user.role === "admin") {
-        if (!dto.startTime || !dto.endTime) {
-          throw new BadRequestException("Admin must send startTime and endTime");
-        }
-
-        const start = dto.startTime instanceof Date ? dto.startTime : new Date(dto.startTime);
-        const end = dto.endTime instanceof Date ? dto.endTime : new Date(dto.endTime);
-
-        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-          throw new BadRequestException("Invalid startTime or endTime");
-        }
-
-        const dateStr = start.toISOString().split("T")[0];
-        const blocked = await this.getBlockedTimesForDate(dateStr);
-
-        const overlapBlocked = blocked.some(b => {
-          return start < new Date(b.endTime) && end > new Date(b.startTime);
-        });
-
-        if (overlapBlocked) {
-          throw new BadRequestException("This time is blocked");
-        }
-
-        const now = new Date();
-        if (start < now) {
-          throw new BadRequestException("Cannot move appointment to the past");
-        }
-
-        const settings = await this.getBusinessSettings();
-        const { y, m, d } = this.parseDateParts(dateStr);
-        const { openDate, closeDate } = this.getBusinessWindowForDate(y, m, d, settings);
-
-        if (start < openDate || end > closeDate) {
-          throw new BadRequestException("Appointment outside business hours");
-        }
-
-        const sameDayAppointments = await this.getForDate({ date: dateStr });
-
-        const overlap = sameDayAppointments.some(a => {
-          if (a.id === appointment.id) return false;
-          return start < new Date(a.endTime) && end > new Date(a.startTime);
-        });
-
-        if (overlap) {
-          throw new BadRequestException("This time overlaps another appointment");
-        }
-
-        return this.prisma.appointment.update({
-          where: { id },
-          data: {
-            startTime: start,
-            endTime: end,
-            date: new Date(dateStr)
-          }
-        });
-      }
-
-      // -------- customer flow (suggestions) ----------
-      if (!dto.date || !dto.preferredTime) {
-        throw new BadRequestException("date and preferredTime are required for customers");
-      }
-
-      const suggestions = await this.getSuggestions({
-        serviceId: appointment.serviceId,
-        date: dto.date,
-        preferredTime: dto.preferredTime
-      });
-
-      if (!suggestions.length) {
-        throw new BadRequestException("No available suggestions");
-      }
-
-      if (!dto.startTime) {
-        throw new BadRequestException("You must send the chosen startTime from suggestions");
-      }
-      const chosenTime = dto.startTime instanceof Date ? dto.startTime.getTime() : new Date(dto.startTime).getTime();
-      if (isNaN(chosenTime)) {
-        throw new BadRequestException("Invalid chosen startTime");
-      }
-
-      const chosen = suggestions.find(s => s.start.getTime() === chosenTime);
-
-      if (!chosen) {
-        throw new BadRequestException("Invalid suggestion selected");
-      }
-
-      return this.prisma.appointment.update({
-        where: { id },
-        data: {
-          startTime: chosen.start,
-          endTime: chosen.end,
-          date: new Date(dto.date)
-        }
-      });
-    }
-
-
-  async delete (id: number) {
-      return this.prisma.appointment.delete({
-        where: { id },
-      });
-    }
-
-  async checkAvailability(dto: CheckAvailabilityDto): Promise < boolean > {
-      const { serviceId, date, startTime } = dto;
-
-      const service = await this.prisma.service.findUnique({
-        where: { id: serviceId },
-      });
-
-      if(!service) {
-        return false;
-      }
 
     const settings = await this.getBusinessSettings();
 
-      const { y, m, d } = this.parseDateParts(date);
-      const { hh, mm } = this.validateTimeString(startTime);
+    const service = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+    });
 
-      const start = new Date(y, m - 1, d, hh, mm);
-      const end = new Date(start.getTime() + service.duration * 60000);
+    if (!service) {
+      throw new NotFoundException("Service not found");
+    }
 
-      // --- Blocked times check ---
-      const blocked = await this.getBlockedTimesForDate(date);
+    const { y, m, d } = this.parseDateParts(date);
+    const { hh, mm } = this.validateTimeString(startTime);
 
-      const blockedOverlap = blocked.some(b => {
-        const bStart = new Date(b.startTime);
-        const bEnd = new Date(b.endTime);
-        return start < bEnd && end > bStart;
-      });
+    const start = new Date(y, m - 1, d, hh, mm);
+    const end = new Date(start.getTime() + service.duration * 60000);
 
-      if(blockedOverlap) {
-        return false
-      }
+    // --- Blocked times check ---
+    const blocked = await this.getBlockedTimesForDate(date);
+
+    const blockedOverlap = blocked.some(b => {
+      const bStart = new Date(b.startTime);
+      const bEnd = new Date(b.endTime);
+      return start < bEnd && end > bStart;
+    });
+
+    if (blockedOverlap) {
+      throw new BadRequestException("This time is blocked");
+    }
+
+
+    const now = new Date();
+    if (start < now) {
+      throw new BadRequestException("Cannot book an appointment in the past");
+    }
+
+    const diffDays = (start.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+    if (diffDays > settings.maxAdvanceBookingDays) {
+      throw new BadRequestException(
+        `Cannot book more than ${settings.maxAdvanceBookingDays} days in advance`
+      );
+    }
 
     const { openDate, closeDate } = this.getBusinessWindowForDate(y, m, d, settings);
 
-      if(start <openDate || end > closeDate) {
+    if (start < openDate || end > closeDate) {
+      throw new BadRequestException("Appointment is outside business hours");
+    }
+
+    const isAvailable = await this.checkAvailability({
+      serviceId,
+      date,
+      startTime,
+    });
+
+    if (!isAvailable) {
+      throw new BadRequestException("This time slot is not available");
+    }
+
+    const pureDate = new Date(y, m - 1, d);
+
+    return this.prisma.appointment.create({
+      data: {
+        userId: appointmentUserId,
+        serviceId,
+        date: pureDate,
+        startTime: start,
+        endTime: end,
+        status: "scheduled",
+      },
+    });
+  }
+
+  async getAllAppointments() {
+    return this.prisma.appointment.findMany({
+      include: {
+        service: true,
+        user: true,
+      },
+      orderBy: {
+        startTime: "asc",
+      },
+    });
+  }
+
+  async getForDate(dto: GetAppointmentsByDateDto) {
+    const { date } = dto;
+
+    const { y, m, d } = this.parseDateParts(date);
+    const dayStart = new Date(y, m - 1, d, 0, 0, 0);
+    const dayEnd = new Date(y, m - 1, d, 23, 59, 59, 999);
+
+    const appointments = await this.prisma.appointment.findMany({
+      where: {
+        startTime: {
+          gte: dayStart,
+          lte: dayEnd,
+        },
+      },
+      orderBy: {
+        startTime: "asc",
+      },
+      include: {
+        service: true,
+        user: true,
+      },
+    });
+
+    return this.updateExpiredAppointments(appointments);
+  }
+
+  async getMyAppointments(userId: number) {
+    const appointments = await this.prisma.appointment.findMany({
+      where: { userId },
+      orderBy: { startTime: "asc" },
+      include: { service: true },
+    });
+
+    return this.updateExpiredAppointments(appointments);
+  }
+
+  async updateAppointment(id: number, dto: UpdateAppointmentDto, user: any) {
+    const appointment = await this.prisma.appointment.findUnique({
+      where: { id },
+      include: { service: true }
+    });
+
+    if (!appointment) {
+      throw new NotFoundException("Appointment not found");
+    }
+
+    if (user.role === "customer" && appointment.userId !== user.id) {
+      throw new ForbiddenException("You cannot edit this appointment");
+    }
+
+    // -------- admin flow (direct edit) ----------
+    if (user.role === "admin") {
+      if (!dto.startTime || !dto.endTime) {
+        throw new BadRequestException("Admin must send startTime and endTime");
+      }
+
+      const start = dto.startTime instanceof Date ? dto.startTime : new Date(dto.startTime);
+      const end = dto.endTime instanceof Date ? dto.endTime : new Date(dto.endTime);
+
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        throw new BadRequestException("Invalid startTime or endTime");
+      }
+
+      const dateStr = start.toISOString().split("T")[0];
+      const blocked = await this.getBlockedTimesForDate(dateStr);
+
+      if (blocked.some(b => start < new Date(b.endTime) && end > new Date(b.startTime))) {
+        throw new BadRequestException("This time is blocked");
+      }
+
+      const now = new Date();
+      if (start < now) {
+        throw new BadRequestException("Cannot move appointment to the past");
+      }
+
+      const settings = await this.getBusinessSettings();
+      const { y, m, d } = this.parseDateParts(dateStr);
+      const { openDate, closeDate } = this.getBusinessWindowForDate(y, m, d, settings);
+
+      if (start < openDate || end > closeDate) {
+        throw new BadRequestException("Appointment outside business hours");
+      }
+
+      const sameDayAppointments = await this.getForDate({ date: dateStr });
+      if (sameDayAppointments.some(a => a.id !== appointment.id && start < new Date(a.endTime) && end > new Date(a.startTime))) {
+        throw new BadRequestException("This time overlaps another appointment");
+      }
+
+      const originalStart = new Date(appointment.startTime);
+
+      const updated = await this.prisma.appointment.update({
+        where: { id },
+        data: {
+          startTime: start,
+          endTime: end,
+          date: new Date(dateStr),
+          status: dto.status || appointment.status
+        },
+      });
+
+      if (dto.status === "cancelled" || originalStart.getTime() !== start.getTime()) {
+        await this.waitlistService.notifyAvailableAppointments(
+          appointment.serviceId,
+          originalStart
+        );
+      }
+
+      return updated;
+    }
+
+    // -------- customer flow (suggestions) ----------
+    if (!dto.date || !dto.preferredTime) {
+      throw new BadRequestException("date and preferredTime are required for customers");
+    }
+
+    const suggestions = await this.getSuggestions({
+      serviceId: appointment.serviceId,
+      date: dto.date,
+      preferredTime: dto.preferredTime
+    });
+
+    if (!suggestions.length) {
+      throw new BadRequestException("No available suggestions");
+    }
+
+    if (!dto.startTime) {
+      throw new BadRequestException("You must send the chosen startTime from suggestions");
+    }
+
+    const chosenTime = dto.startTime instanceof Date ? dto.startTime.getTime() : new Date(dto.startTime).getTime();
+    if (isNaN(chosenTime)) {
+      throw new BadRequestException("Invalid chosen startTime");
+    }
+
+    const chosen = suggestions.find(s => s.start.getTime() === chosenTime);
+    if (!chosen) {
+      throw new BadRequestException("Invalid suggestion selected");
+    }
+
+    const oldStart = new Date(appointment.startTime);
+
+    const updated = await this.prisma.appointment.update({
+      where: { id: appointment.id },
+      data: {
+        startTime: chosen.start,
+        endTime: chosen.end,
+        date: new Date(dto.date),
+      },
+    });
+
+    await this.waitlistService.notifyAvailableAppointments(
+      appointment.serviceId,
+      oldStart
+    );
+
+    return updated;
+  }
+
+  async delete(id: number) {
+    const appointmentToDelete = await this.prisma.appointment.findUnique({ where: { id } });
+    if (!appointmentToDelete) {
+      throw new NotFoundException("Appointment not found");
+    }
+    const deleted = await this.prisma.appointment.delete({ where: { id } });
+
+    await this.waitlistService.notifyAvailableAppointments(
+      appointmentToDelete.serviceId,
+      appointmentToDelete.startTime
+    );
+
+    return deleted;
+  }
+
+  async checkAvailability(dto: CheckAvailabilityDto): Promise<boolean> {
+    const { serviceId, date, startTime } = dto;
+
+    const service = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+    });
+
+    if (!service) {
+      return false;
+    }
+
+    const settings = await this.getBusinessSettings();
+
+    const { y, m, d } = this.parseDateParts(date);
+    const { hh, mm } = this.validateTimeString(startTime);
+
+    const start = new Date(y, m - 1, d, hh, mm);
+    const end = new Date(start.getTime() + service.duration * 60000);
+
+    // --- Blocked times check ---
+    const blocked = await this.getBlockedTimesForDate(date);
+
+    const blockedOverlap = blocked.some(b => {
+      const bStart = new Date(b.startTime);
+      const bEnd = new Date(b.endTime);
+      return start < bEnd && end > bStart;
+    });
+
+    if (blockedOverlap) {
+      return false
+    }
+
+    const { openDate, closeDate } = this.getBusinessWindowForDate(y, m, d, settings);
+
+    if (start < openDate || end > closeDate) {
       throw new BadRequestException("Appointment is outside business hours");
     }
 

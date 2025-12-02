@@ -14,4 +14,8 @@ export class UpdateAppointmentDto {
 
   @IsOptional()
   endTime?: string | Date;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
 }
