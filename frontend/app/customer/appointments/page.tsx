@@ -130,9 +130,9 @@ function MyAppointmentsContent() {
                           </p>
                         </div>
                         <span
-                          className={`px-3 py-1 rounded-full text-sm ${apt.status === "confirmed"
+                          className={`px-3 py-1 rounded-full text-sm ${apt.status === "scheduled"
                             ? "bg-green-100 text-green-800"
-                            : apt.status === "pending"
+                            : apt.status === "done"
                               ? "bg-yellow-100 text-yellow-800"
                               : apt.status === "cancelled"
                                 ? "bg-red-100 text-red-800"

@@ -32,7 +32,7 @@ export interface Appointment {
   userId: string
   startTime: string
   endTime: string
-  status: "pending" | "confirmed" | "cancelled" | "completed"
+  status: "scheduled" | "done" | "cancelled"
   service?: Service
   user?: User
 }
