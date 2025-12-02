@@ -19,6 +19,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   appointments Appointment[]
+  waitlists   Waitlist[]
 }
 
 model Service {
@@ -31,6 +32,7 @@ model Service {
   updatedAt   DateTime @updatedAt
 
   appointments Appointment[]
+  waitlists   Waitlist[]
 }
 
 model Appointment {
@@ -61,3 +63,18 @@ model BlockedTime {
   endTime   DateTime
   reason    String?  // optional - text the admin writes
 }
+
+model Waitlist {
+  id             Int       @id @default(autoincrement())
+  userId         Int
+  serviceId      Int
+  preferredDate  DateTime? 
+  preferredTime  DateTime?
+  status         String    @default("pending") // pending / notified / fulfilled / expired
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user           User      @relation(fields: [userId], references: [id])
+  service        Service   @relation(fields: [serviceId], references: [id])
+}
+
