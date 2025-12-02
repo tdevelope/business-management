@@ -1,11 +1,13 @@
-import { 
+import {
   IsInt,
   IsDateString,
-  Matches
+  Matches,
+  IsUUID,
+  IsOptional
 } from 'class-validator';
 
 export class CreateAppointmentDto {
-  
+
   @IsInt()
   serviceId!: number;
 
@@ -16,4 +18,8 @@ export class CreateAppointmentDto {
     message: 'startTime must be in HH:MM format',
   })
   startTime!: string; // HH:mm
+
+  @IsOptional()
+  @IsUUID()
+  userId?: string;
 }

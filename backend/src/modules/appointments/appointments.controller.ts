@@ -15,7 +15,8 @@ export class AppointmentsController {
     @Post()
     async createAppointment(@Req() req, @Body() dto: CreateAppointmentDto) {
         const userId = req.user.id;
-        return this.appointmentsService.createAppointment(dto, userId);
+        const userRole = req.user.role;
+        return this.appointmentsService.createAppointment(dto, userId, userRole);
     }
 
     @UseGuards(JwtAuthGuard)
