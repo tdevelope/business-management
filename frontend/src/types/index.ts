@@ -50,3 +50,15 @@ export interface CheckAvailabilityDto {
   date: string
   preferredTime: string
 }
+
+export interface WaitlistEntry {
+  id: number
+  userId: number
+  serviceId: number
+  preferredDate: string
+  preferredTime: string
+  status: string
+  createdAt?: string
+  updatedAt?: string
+}
+

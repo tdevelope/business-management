@@ -25,17 +25,17 @@ export class WaitlistController {
         return this.waitlistService.findAll();
     }
 
-    @Get(':id')
-    @Roles('admin')
-    findOne(@Param('id') id: string) {
-        return this.waitlistService.findOne(+id);
-    }
-
     @Get('my-waitlist')
     @Roles('customer')
     getMyWaitlist(@Req() req) {
         const userId = req.user.id;
         return this.waitlistService.findManyByUser(userId);
+    }
+
+    @Get(':id')
+    @Roles('admin')
+    findOne(@Param('id') id: string) {
+        return this.waitlistService.findOne(+id);
     }
 
     @Post('update/:id')
