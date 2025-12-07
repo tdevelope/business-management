@@ -7,6 +7,8 @@ import { GetSuggestionsDto } from "./dto/get-suggestions.dto";
 import { BusinessSettingsService } from "../business-settings/business-settings.service";
 import { UpdateAppointmentDto } from "./dto/update-appointment.dto";
 import { WaitlistService } from "../waitlist/waitlist.service";
+import { NotificationsService } from "../notifications/notifications.service";
+import { UsersService } from "../users/users.service";
 
 @Injectable()
 export class AppointmentsService {
@@ -14,7 +16,9 @@ export class AppointmentsService {
   constructor(
     private prisma: PrismaService,
     private businessSettings: BusinessSettingsService,
-    private waitlistService: WaitlistService
+    private waitlistService: WaitlistService,
+    private notificationsService: NotificationsService,
+    private userService: UsersService
   ) { }
 
   async createAppointment(dto: CreateAppointmentDto, userId: number, userRole: string) {
@@ -88,7 +92,7 @@ export class AppointmentsService {
 
     const pureDate = new Date(y, m - 1, d);
 
-    return this.prisma.appointment.create({
+    const appointment = await this.prisma.appointment.create({
       data: {
         userId: appointmentUserId,
         serviceId,
@@ -98,6 +102,12 @@ export class AppointmentsService {
         status: "scheduled",
       },
     });
+
+    const user = await this.userService.getMe(appointmentUserId);
+
+    await this.notificationsService.sendAppointmentConfirmationEmail(user, appointment);
+
+    return appointment;
   }
 
   async getAllAppointments() {
@@ -162,6 +172,10 @@ export class AppointmentsService {
       throw new ForbiddenException("You cannot edit this appointment");
     }
 
+    // --- common originals (before any changes) ---
+    const originalStart = new Date(appointment.startTime);
+    const originalStatus = appointment.status;
+
     // -------- admin flow (direct edit) ----------
     if (user.role === "admin") {
       if (!dto.startTime || !dto.endTime) {
@@ -200,8 +214,12 @@ export class AppointmentsService {
         throw new BadRequestException("This time overlaps another appointment");
       }
 
-      const originalStart = new Date(appointment.startTime);
+      // compute flags BEFORE the update (based on intended changes)
+      const wasCancelled = originalStatus === "cancelled";
+      const isNowCancelled = dto.status === "cancelled";
+      const timeWillChange = originalStart.getTime() !== start.getTime();
 
+      // perform update first
       const updated = await this.prisma.appointment.update({
         where: { id },
         data: {
@@ -212,7 +230,26 @@ export class AppointmentsService {
         },
       });
 
-      if (dto.status === "cancelled" || originalStart.getTime() !== start.getTime()) {
+      // get user object for emails
+      const appointmentUser = await this.userService.getMe(updated.userId);
+
+      // after update -> send emails according to what actually changed
+      if (!wasCancelled && isNowCancelled) {
+        // send cancellation email
+        await this.notificationsService.sendAppointmentCancelledEmail(
+          appointmentUser,
+          updated
+        );
+      } else if (timeWillChange && updated.status !== "cancelled") {
+        // send update email (only if not cancelled)
+        await this.notificationsService.sendAppointmentUpdatedEmail(
+          appointmentUser,
+          updated
+        );
+      }
+
+      // notify waitlist if cancelled or time changed (use originalStart)
+      if (isNowCancelled || timeWillChange) {
         await this.waitlistService.notifyAvailableAppointments(
           appointment.serviceId,
           originalStart
@@ -222,7 +259,37 @@ export class AppointmentsService {
       return updated;
     }
 
-    // -------- customer flow (suggestions) ----------
+    // -------- customer flow ----------
+    // handle direct cancellation by customer (if frontend sends dto.status === 'cancelled' without date change)
+    if (dto.status === "cancelled" && (!dto.date && !dto.startTime && !dto.preferredTime)) {
+      // only change status to cancelled
+      if (originalStatus === "cancelled") {
+        // already cancelled — nothing to do
+        return appointment;
+      }
+
+      const updated = await this.prisma.appointment.update({
+        where: { id },
+        data: { status: "cancelled" },
+      });
+
+      const appointmentUser = await this.userService.getMe(updated.userId);
+
+      await this.notificationsService.sendAppointmentCancelledEmail(
+        appointmentUser,
+        updated
+      );
+
+      // notify waitlist that this slot freed
+      await this.waitlistService.notifyAvailableAppointments(
+        appointment.serviceId,
+        originalStart
+      );
+
+      return updated;
+    }
+
+    // normal suggestions flow for customers (changing time via suggestions)
     if (!dto.date || !dto.preferredTime) {
       throw new BadRequestException("date and preferredTime are required for customers");
     }
@@ -259,16 +326,43 @@ export class AppointmentsService {
         startTime: chosen.start,
         endTime: chosen.end,
         date: new Date(dto.date),
+        // keep existing status unless frontend explicitly set it
+        status: dto.status || appointment.status
       },
     });
 
-    await this.waitlistService.notifyAvailableAppointments(
-      appointment.serviceId,
-      oldStart
-    );
+    // determine changes AFTER update
+    const timeChanged = oldStart.getTime() !== updated.startTime.getTime();
+    const wasCancelledCustomer = originalStatus === "cancelled";
+    const isNowCancelledCustomer = updated.status === "cancelled";
+
+    const appointmentUser = await this.userService.getMe(updated.userId);
+
+    if (!wasCancelledCustomer && isNowCancelledCustomer) {
+      // cancellation happened as part of customer update
+      await this.notificationsService.sendAppointmentCancelledEmail(
+        appointmentUser,
+        updated
+      );
+    } else if (timeChanged && updated.status !== "cancelled") {
+      // time changed -> send updated email
+      await this.notificationsService.sendAppointmentUpdatedEmail(
+        appointmentUser,
+        updated
+      );
+    }
+
+    // notify waitlist if needed (slot freed)
+    if (isNowCancelledCustomer || timeChanged) {
+      await this.waitlistService.notifyAvailableAppointments(
+        appointment.serviceId,
+        oldStart
+      );
+    }
 
     return updated;
   }
+
 
   async delete(id: number) {
     const appointmentToDelete = await this.prisma.appointment.findUnique({ where: { id } });

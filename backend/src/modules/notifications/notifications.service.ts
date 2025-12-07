@@ -82,6 +82,21 @@ export class NotificationsService {
     );
   }
 
+  async sendAppointmentUpdatedEmail(user: any, appointment: any) {
+    return this.sendEmail(
+      user.email,
+      'התור שלך עודכן',
+      'appointment-updated',
+      {
+        clientName: user.firstName,
+        serviceName: appointment.service.name,
+        appointmentDate: appointment.startTime,
+        appointmentEnd: appointment.endTime,
+      },
+    );
+  }
+
+
   async sendWaitlistNotificationEmail(user: any, service: any, availableTime: string) {
     return this.sendEmail(
       user.email,
