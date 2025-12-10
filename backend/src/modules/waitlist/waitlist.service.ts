@@ -2,10 +2,18 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateWaitlistDto } from './dto/create-waitlist.dto';
 import { UpdateWaitlistDto } from './dto/update-waitlist.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class WaitlistService {
-    constructor(private prisma: PrismaService) { }
+    constructor
+    (
+        private prisma: PrismaService,
+        private notificationsService: NotificationsService,
+        private userService: UsersService
+    )
+    { }
 
     create(dto: CreateWaitlistDto) {
         return this.prisma.waitlist.create({ data: dto });
@@ -58,14 +66,26 @@ export class WaitlistService {
             },
         });
 
+        if (!waitlistEntries.length) return [];
+
+        const service = await this.prisma.service.findUnique({
+            where: { id: serviceId }
+        });
+
         const toNotify = waitlistEntries.filter(entry => {
             const preferred = entry.preferredTime || entry.preferredDate || availableTime;
             return Math.abs(new Date(preferred).getTime() - availableTime.getTime()) <= 90 * 60000;
         });
 
         for (const entry of toNotify) {
+            const user = await this.userService.getMe(entry.userId);
+
+            await this.notificationsService.sendWaitlistNotificationEmail(
+                user,
+                service,
+                String(availableTime)
+            );
             await this.update(entry.id, { status: 'notified' });
-            // כאן ניתן להוסיף קריאה לשליחת מייל/התראה
         }
 
         return toNotify;

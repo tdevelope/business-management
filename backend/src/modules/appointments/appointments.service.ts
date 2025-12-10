@@ -9,6 +9,8 @@ import { UpdateAppointmentDto } from "./dto/update-appointment.dto";
 import { WaitlistService } from "../waitlist/waitlist.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { UsersService } from "../users/users.service";
+import { Queue } from "bull";
+import { InjectQueue } from "@nestjs/bull";
 
 @Injectable()
 export class AppointmentsService {
@@ -18,8 +20,10 @@ export class AppointmentsService {
     private businessSettings: BusinessSettingsService,
     private waitlistService: WaitlistService,
     private notificationsService: NotificationsService,
-    private userService: UsersService
+    private userService: UsersService,
+    @InjectQueue('reminders') private readonly remindersQueue: Queue
   ) { }
+
 
   async createAppointment(dto: CreateAppointmentDto, userId: number, userRole: string) {
     const { serviceId, date, startTime } = dto;
@@ -107,6 +111,20 @@ export class AppointmentsService {
 
     await this.notificationsService.sendAppointmentConfirmationEmail(user, appointment);
 
+    const REMINDER_BEFORE_MS = 120 * 60 * 1000;
+    const reminderTime = new Date(appointment.startTime.getTime() - REMINDER_BEFORE_MS);
+
+    const job = await this.remindersQueue.add(
+      'appointment-reminder',
+      { appointmentId: appointment.id, userId: appointment.userId },
+      { delay: reminderTime.getTime() - Date.now(), attempts: 3 }
+    );
+
+    await this.prisma.appointment.update({
+      where: { id: appointment.id },
+      data: { reminderJobId: job.id },
+    });
+
     return appointment;
   }
 
@@ -172,11 +190,10 @@ export class AppointmentsService {
       throw new ForbiddenException("You cannot edit this appointment");
     }
 
-    // --- common originals (before any changes) ---
     const originalStart = new Date(appointment.startTime);
     const originalStatus = appointment.status;
+    const originalJobId = appointment.reminderJobId;
 
-    // -------- admin flow (direct edit) ----------
     if (user.role === "admin") {
       if (!dto.startTime || !dto.endTime) {
         throw new BadRequestException("Admin must send startTime and endTime");
@@ -214,12 +231,10 @@ export class AppointmentsService {
         throw new BadRequestException("This time overlaps another appointment");
       }
 
-      // compute flags BEFORE the update (based on intended changes)
       const wasCancelled = originalStatus === "cancelled";
       const isNowCancelled = dto.status === "cancelled";
       const timeWillChange = originalStart.getTime() !== start.getTime();
 
-      // perform update first
       const updated = await this.prisma.appointment.update({
         where: { id },
         data: {
@@ -230,25 +245,35 @@ export class AppointmentsService {
         },
       });
 
-      // get user object for emails
       const appointmentUser = await this.userService.getMe(updated.userId);
 
-      // after update -> send emails according to what actually changed
       if (!wasCancelled && isNowCancelled) {
-        // send cancellation email
-        await this.notificationsService.sendAppointmentCancelledEmail(
-          appointmentUser,
-          updated
-        );
+        await this.notificationsService.sendAppointmentCancelledEmail(appointmentUser, updated);
+        if (originalJobId) {
+          const job = await this.remindersQueue.getJob(originalJobId);
+          if (job) await job.remove();
+        }
       } else if (timeWillChange && updated.status !== "cancelled") {
-        // send update email (only if not cancelled)
-        await this.notificationsService.sendAppointmentUpdatedEmail(
-          appointmentUser,
-          updated
+        await this.notificationsService.sendAppointmentUpdatedEmail(appointmentUser, updated);
+        if (originalJobId) {
+          const job = await this.remindersQueue.getJob(originalJobId);
+          if (job) await job.remove();
+        }
+
+        const REMINDER_BEFORE_MS = 60 * 60 * 1000;
+        const reminderTime = new Date(updated.startTime.getTime() - REMINDER_BEFORE_MS);
+        const newJob = await this.remindersQueue.add(
+          'appointment-reminder',
+          { appointmentId: updated.id, userId: updated.userId },
+          { delay: reminderTime.getTime() - Date.now(), attempts: 3 }
         );
+
+        await this.prisma.appointment.update({
+          where: { id: updated.id },
+          data: { reminderJobId: newJob.id },
+        });
       }
 
-      // notify waitlist if cancelled or time changed (use originalStart)
       if (isNowCancelled || timeWillChange) {
         await this.waitlistService.notifyAvailableAppointments(
           appointment.serviceId,
@@ -259,14 +284,8 @@ export class AppointmentsService {
       return updated;
     }
 
-    // -------- customer flow ----------
-    // handle direct cancellation by customer (if frontend sends dto.status === 'cancelled' without date change)
     if (dto.status === "cancelled" && (!dto.date && !dto.startTime && !dto.preferredTime)) {
-      // only change status to cancelled
-      if (originalStatus === "cancelled") {
-        // already cancelled — nothing to do
-        return appointment;
-      }
+      if (originalStatus === "cancelled") return appointment;
 
       const updated = await this.prisma.appointment.update({
         where: { id },
@@ -274,13 +293,13 @@ export class AppointmentsService {
       });
 
       const appointmentUser = await this.userService.getMe(updated.userId);
+      await this.notificationsService.sendAppointmentCancelledEmail(appointmentUser, updated);
 
-      await this.notificationsService.sendAppointmentCancelledEmail(
-        appointmentUser,
-        updated
-      );
+      if (originalJobId) {
+        const job = await this.remindersQueue.getJob(originalJobId);
+        if (job) await job.remove();
+      }
 
-      // notify waitlist that this slot freed
       await this.waitlistService.notifyAvailableAppointments(
         appointment.serviceId,
         originalStart
@@ -289,7 +308,6 @@ export class AppointmentsService {
       return updated;
     }
 
-    // normal suggestions flow for customers (changing time via suggestions)
     if (!dto.date || !dto.preferredTime) {
       throw new BadRequestException("date and preferredTime are required for customers");
     }
@@ -300,23 +318,14 @@ export class AppointmentsService {
       preferredTime: dto.preferredTime
     });
 
-    if (!suggestions.length) {
-      throw new BadRequestException("No available suggestions");
-    }
-
-    if (!dto.startTime) {
-      throw new BadRequestException("You must send the chosen startTime from suggestions");
-    }
+    if (!suggestions.length) throw new BadRequestException("No available suggestions");
+    if (!dto.startTime) throw new BadRequestException("You must send the chosen startTime from suggestions");
 
     const chosenTime = dto.startTime instanceof Date ? dto.startTime.getTime() : new Date(dto.startTime).getTime();
-    if (isNaN(chosenTime)) {
-      throw new BadRequestException("Invalid chosen startTime");
-    }
+    if (isNaN(chosenTime)) throw new BadRequestException("Invalid chosen startTime");
 
     const chosen = suggestions.find(s => s.start.getTime() === chosenTime);
-    if (!chosen) {
-      throw new BadRequestException("Invalid suggestion selected");
-    }
+    if (!chosen) throw new BadRequestException("Invalid suggestion selected");
 
     const oldStart = new Date(appointment.startTime);
 
@@ -326,12 +335,10 @@ export class AppointmentsService {
         startTime: chosen.start,
         endTime: chosen.end,
         date: new Date(dto.date),
-        // keep existing status unless frontend explicitly set it
         status: dto.status || appointment.status
       },
     });
 
-    // determine changes AFTER update
     const timeChanged = oldStart.getTime() !== updated.startTime.getTime();
     const wasCancelledCustomer = originalStatus === "cancelled";
     const isNowCancelledCustomer = updated.status === "cancelled";
@@ -339,20 +346,32 @@ export class AppointmentsService {
     const appointmentUser = await this.userService.getMe(updated.userId);
 
     if (!wasCancelledCustomer && isNowCancelledCustomer) {
-      // cancellation happened as part of customer update
-      await this.notificationsService.sendAppointmentCancelledEmail(
-        appointmentUser,
-        updated
-      );
+      await this.notificationsService.sendAppointmentCancelledEmail(appointmentUser, updated);
+      if (originalJobId) {
+        const job = await this.remindersQueue.getJob(originalJobId);
+        if (job) await job.remove();
+      }
     } else if (timeChanged && updated.status !== "cancelled") {
-      // time changed -> send updated email
-      await this.notificationsService.sendAppointmentUpdatedEmail(
-        appointmentUser,
-        updated
+      await this.notificationsService.sendAppointmentUpdatedEmail(appointmentUser, updated);
+      if (originalJobId) {
+        const job = await this.remindersQueue.getJob(originalJobId);
+        if (job) await job.remove();
+      }
+
+      const REMINDER_BEFORE_MS = 60 * 60 * 1000;
+      const reminderTime = new Date(updated.startTime.getTime() - REMINDER_BEFORE_MS);
+      const newJob = await this.remindersQueue.add(
+        'appointment-reminder',
+        { appointmentId: updated.id, userId: updated.userId },
+        { delay: reminderTime.getTime() - Date.now(), attempts: 3 }
       );
+
+      await this.prisma.appointment.update({
+        where: { id: updated.id },
+        data: { reminderJobId: newJob.id },
+      });
     }
 
-    // notify waitlist if needed (slot freed)
     if (isNowCancelledCustomer || timeChanged) {
       await this.waitlistService.notifyAvailableAppointments(
         appointment.serviceId,
@@ -363,12 +382,19 @@ export class AppointmentsService {
     return updated;
   }
 
-
   async delete(id: number) {
     const appointmentToDelete = await this.prisma.appointment.findUnique({ where: { id } });
     if (!appointmentToDelete) {
       throw new NotFoundException("Appointment not found");
     }
+
+    if (appointmentToDelete.reminderJobId) {
+      const job = await this.remindersQueue.getJob(appointmentToDelete.reminderJobId);
+      if (job) {
+        await job.remove();
+      }
+    }
+
     const deleted = await this.prisma.appointment.delete({ where: { id } });
 
     await this.waitlistService.notifyAvailableAppointments(
