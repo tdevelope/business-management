@@ -10,11 +10,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
+import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+
   const { login } = useAuth()
   const { toast } = useToast()
 
@@ -59,16 +62,27 @@ export default function LoginPage() {
                   required
                 />
               </div>
-              <div className="space-y-2">
+              <div className="relative">
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  required
+                  className="pr-10"
+                  required          
                 />
+                <div className="absolute inset-y-0 right-2 flex items-center">
+                  <button
+                    type="button"
+                    className="relative top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center p-0 text-gray-500 hover:text-gray-700"
+                    onClick={() => setShowPassword(prev => !prev)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <AiOutlineEyeInvisible size={20} /> : <AiOutlineEye size={20} />}
+                  </button>
+                </div>
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
