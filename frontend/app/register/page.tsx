@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
+
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -22,6 +24,8 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
   const { register } = useAuth()
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -142,28 +146,48 @@ export default function RegisterPage() {
                 />
                 {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
               </div>
-              <div className="space-y-2">
+              <div className="relative">
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={(e) => handleChange("password", e.target.value)}
                   required
                 />
+                <div className="absolute inset-y-0 right-2 flex items-center">
+                  <button
+                    type="button"
+                    className="relative top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center p-0 text-gray-500 hover:text-gray-700"
+                    onClick={() => setShowPassword(prev => !prev)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <AiOutlineEyeInvisible size={20} /> : <AiOutlineEye size={20} />}
+                  </button>
+                </div>
                 {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
               </div>
-              <div className="space-y-2">
+              <div className="relative">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
                 <Input
                   id="confirmPassword"
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={formData.confirmPassword}
                   onChange={(e) => handleChange("confirmPassword", e.target.value)}
                   required
                 />
+                <div className="absolute inset-y-0 right-2 flex items-center">
+                  <button
+                    type="button"
+                    className="relative top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center p-0 text-gray-500 hover:text-gray-700"
+                    onClick={() => setShowConfirmPassword(prev => !prev)}
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  >
+                    {showConfirmPassword ? <AiOutlineEyeInvisible size={20} /> : <AiOutlineEye size={20} />}
+                  </button>
+                </div>
                 {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
               </div>
             </CardContent>
