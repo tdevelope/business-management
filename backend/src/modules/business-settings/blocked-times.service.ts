@@ -6,7 +6,9 @@ import { UpdateBlockedTimeDto } from "./dto/update-blocked-time.dto";
 
 @Injectable()
 export class BlockedTimesService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+  ) { }
 
   findAll() {
     return this.prisma.blockedTime.findMany({
@@ -31,7 +33,6 @@ export class BlockedTimesService {
         where: { id: appt.id },
         data: {
           status: "cancelled",
-          // TODO: send cancellation email to user
         },
       });
     }

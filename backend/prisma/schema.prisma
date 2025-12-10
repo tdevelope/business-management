@@ -43,7 +43,8 @@ model Appointment {
   startTime  DateTime
   endTime    DateTime
   status     String   @default("scheduled")
-
+  reminderJobId  String?
+  
   user       User @relation(fields: [userId], references: [id])
   service    Service  @relation(fields: [serviceId], references: [id])
 }

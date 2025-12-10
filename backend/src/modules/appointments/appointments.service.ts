@@ -7,6 +7,10 @@ import { GetSuggestionsDto } from "./dto/get-suggestions.dto";
 import { BusinessSettingsService } from "../business-settings/business-settings.service";
 import { UpdateAppointmentDto } from "./dto/update-appointment.dto";
 import { WaitlistService } from "../waitlist/waitlist.service";
+import { NotificationsService } from "../notifications/notifications.service";
+import { UsersService } from "../users/users.service";
+import { Queue } from "bull";
+import { InjectQueue } from "@nestjs/bull";
 
 @Injectable()
 export class AppointmentsService {
@@ -14,8 +18,12 @@ export class AppointmentsService {
   constructor(
     private prisma: PrismaService,
     private businessSettings: BusinessSettingsService,
-    private waitlistService: WaitlistService
+    private waitlistService: WaitlistService,
+    private notificationsService: NotificationsService,
+    private userService: UsersService,
+    @InjectQueue('reminders') private readonly remindersQueue: Queue
   ) { }
+
 
   async createAppointment(dto: CreateAppointmentDto, userId: number, userRole: string) {
     const { serviceId, date, startTime } = dto;
@@ -88,7 +96,7 @@ export class AppointmentsService {
 
     const pureDate = new Date(y, m - 1, d);
 
-    return this.prisma.appointment.create({
+    const appointment = await this.prisma.appointment.create({
       data: {
         userId: appointmentUserId,
         serviceId,
@@ -98,6 +106,26 @@ export class AppointmentsService {
         status: "scheduled",
       },
     });
+
+    const user = await this.userService.getMe(appointmentUserId);
+
+    await this.notificationsService.sendAppointmentConfirmationEmail(user, appointment);
+
+    const REMINDER_BEFORE_MS = 120 * 60 * 1000;
+    const reminderTime = new Date(appointment.startTime.getTime() - REMINDER_BEFORE_MS);
+
+    const job = await this.remindersQueue.add(
+      'appointment-reminder',
+      { appointmentId: appointment.id, userId: appointment.userId },
+      { delay: reminderTime.getTime() - Date.now(), attempts: 3 }
+    );
+
+    await this.prisma.appointment.update({
+      where: { id: appointment.id },
+      data: { reminderJobId: job.id.toString() },
+    });
+
+    return appointment;
   }
 
   async getAllAppointments() {
@@ -162,7 +190,10 @@ export class AppointmentsService {
       throw new ForbiddenException("You cannot edit this appointment");
     }
 
-    // -------- admin flow (direct edit) ----------
+    const originalStart = new Date(appointment.startTime);
+    const originalStatus = appointment.status;
+    const originalJobId = appointment.reminderJobId;
+
     if (user.role === "admin") {
       if (!dto.startTime || !dto.endTime) {
         throw new BadRequestException("Admin must send startTime and endTime");
@@ -200,7 +231,9 @@ export class AppointmentsService {
         throw new BadRequestException("This time overlaps another appointment");
       }
 
-      const originalStart = new Date(appointment.startTime);
+      const wasCancelled = originalStatus === "cancelled";
+      const isNowCancelled = dto.status === "cancelled";
+      const timeWillChange = originalStart.getTime() !== start.getTime();
 
       const updated = await this.prisma.appointment.update({
         where: { id },
@@ -212,7 +245,36 @@ export class AppointmentsService {
         },
       });
 
-      if (dto.status === "cancelled" || originalStart.getTime() !== start.getTime()) {
+      const appointmentUser = await this.userService.getMe(updated.userId);
+
+      if (!wasCancelled && isNowCancelled) {
+        await this.notificationsService.sendAppointmentCancelledEmail(appointmentUser, updated);
+        if (originalJobId) {
+          const job = await this.remindersQueue.getJob(originalJobId);
+          if (job) await job.remove();
+        }
+      } else if (timeWillChange && updated.status !== "cancelled") {
+        await this.notificationsService.sendAppointmentUpdatedEmail(appointmentUser, updated);
+        if (originalJobId) {
+          const job = await this.remindersQueue.getJob(originalJobId);
+          if (job) await job.remove();
+        }
+
+        const REMINDER_BEFORE_MS = 60 * 60 * 1000;
+        const reminderTime = new Date(updated.startTime.getTime() - REMINDER_BEFORE_MS);
+        const newJob = await this.remindersQueue.add(
+          'appointment-reminder',
+          { appointmentId: updated.id, userId: updated.userId },
+          { delay: reminderTime.getTime() - Date.now(), attempts: 3 }
+        );
+
+        await this.prisma.appointment.update({
+          where: { id: updated.id },
+          data: { reminderJobId: newJob.id.toString() },
+        });
+      }
+
+      if (isNowCancelled || timeWillChange) {
         await this.waitlistService.notifyAvailableAppointments(
           appointment.serviceId,
           originalStart
@@ -222,7 +284,30 @@ export class AppointmentsService {
       return updated;
     }
 
-    // -------- customer flow (suggestions) ----------
+    if (dto.status === "cancelled" && (!dto.date && !dto.startTime && !dto.preferredTime)) {
+      if (originalStatus === "cancelled") return appointment;
+
+      const updated = await this.prisma.appointment.update({
+        where: { id },
+        data: { status: "cancelled" },
+      });
+
+      const appointmentUser = await this.userService.getMe(updated.userId);
+      await this.notificationsService.sendAppointmentCancelledEmail(appointmentUser, updated);
+
+      if (originalJobId) {
+        const job = await this.remindersQueue.getJob(originalJobId);
+        if (job) await job.remove();
+      }
+
+      await this.waitlistService.notifyAvailableAppointments(
+        appointment.serviceId,
+        originalStart
+      );
+
+      return updated;
+    }
+
     if (!dto.date || !dto.preferredTime) {
       throw new BadRequestException("date and preferredTime are required for customers");
     }
@@ -233,23 +318,14 @@ export class AppointmentsService {
       preferredTime: dto.preferredTime
     });
 
-    if (!suggestions.length) {
-      throw new BadRequestException("No available suggestions");
-    }
-
-    if (!dto.startTime) {
-      throw new BadRequestException("You must send the chosen startTime from suggestions");
-    }
+    if (!suggestions.length) throw new BadRequestException("No available suggestions");
+    if (!dto.startTime) throw new BadRequestException("You must send the chosen startTime from suggestions");
 
     const chosenTime = dto.startTime instanceof Date ? dto.startTime.getTime() : new Date(dto.startTime).getTime();
-    if (isNaN(chosenTime)) {
-      throw new BadRequestException("Invalid chosen startTime");
-    }
+    if (isNaN(chosenTime)) throw new BadRequestException("Invalid chosen startTime");
 
     const chosen = suggestions.find(s => s.start.getTime() === chosenTime);
-    if (!chosen) {
-      throw new BadRequestException("Invalid suggestion selected");
-    }
+    if (!chosen) throw new BadRequestException("Invalid suggestion selected");
 
     const oldStart = new Date(appointment.startTime);
 
@@ -259,13 +335,49 @@ export class AppointmentsService {
         startTime: chosen.start,
         endTime: chosen.end,
         date: new Date(dto.date),
+        status: dto.status || appointment.status
       },
     });
 
-    await this.waitlistService.notifyAvailableAppointments(
-      appointment.serviceId,
-      oldStart
-    );
+    const timeChanged = oldStart.getTime() !== updated.startTime.getTime();
+    const wasCancelledCustomer = originalStatus === "cancelled";
+    const isNowCancelledCustomer = updated.status === "cancelled";
+
+    const appointmentUser = await this.userService.getMe(updated.userId);
+
+    if (!wasCancelledCustomer && isNowCancelledCustomer) {
+      await this.notificationsService.sendAppointmentCancelledEmail(appointmentUser, updated);
+      if (originalJobId) {
+        const job = await this.remindersQueue.getJob(originalJobId);
+        if (job) await job.remove();
+      }
+    } else if (timeChanged && updated.status !== "cancelled") {
+      await this.notificationsService.sendAppointmentUpdatedEmail(appointmentUser, updated);
+      if (originalJobId) {
+        const job = await this.remindersQueue.getJob(originalJobId);
+        if (job) await job.remove();
+      }
+
+      const REMINDER_BEFORE_MS = 60 * 60 * 1000;
+      const reminderTime = new Date(updated.startTime.getTime() - REMINDER_BEFORE_MS);
+      const newJob = await this.remindersQueue.add(
+        'appointment-reminder',
+        { appointmentId: updated.id, userId: updated.userId },
+        { delay: reminderTime.getTime() - Date.now(), attempts: 3 }
+      );
+
+      await this.prisma.appointment.update({
+        where: { id: updated.id },
+        data: { reminderJobId: newJob.id.toString() },
+      });
+    }
+
+    if (isNowCancelledCustomer || timeChanged) {
+      await this.waitlistService.notifyAvailableAppointments(
+        appointment.serviceId,
+        oldStart
+      );
+    }
 
     return updated;
   }
@@ -275,6 +387,14 @@ export class AppointmentsService {
     if (!appointmentToDelete) {
       throw new NotFoundException("Appointment not found");
     }
+
+    if (appointmentToDelete.reminderJobId) {
+      const job = await this.remindersQueue.getJob(appointmentToDelete.reminderJobId);
+      if (job) {
+        await job.remove();
+      }
+    }
+
     const deleted = await this.prisma.appointment.delete({ where: { id } });
 
     await this.waitlistService.notifyAvailableAppointments(
