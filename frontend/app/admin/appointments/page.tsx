@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Calendar, Plus } from "lucide-react"
 import type { Appointment } from "@/types"
 import { AdminWaitlist } from "../appointments/adminWaitlist"
+import { blockedTimesApi } from "@/src/api/blockedTimes"
 
 
 function AppointmentsCalendarContent() {
@@ -144,6 +145,12 @@ function AppointmentsCalendarContent() {
 
     createMutation.mutate(payload)
   }
+
+  const { data: blockedTimes } = useQuery({
+    queryKey: ["blockedTimes"],
+    queryFn: blockedTimesApi.getAll,
+  })
+
 
   const handleStatusChange = (status: string) => {
     if (selectedAppointment) {
@@ -386,6 +393,9 @@ function AppointmentsCalendarContent() {
                 {calendarDays.map((day) => {
                   const dayAppointments = getAppointmentsForDay(day)
                   const isCurrentMonth = isSameMonth(day, currentDate)
+                  const dayBlocked = blockedTimes?.some(bt =>
+                    isSameDay(new Date(bt.startTime), day)
+                  )
 
                   return (
                     <div
@@ -404,6 +414,7 @@ function AppointmentsCalendarContent() {
                         )}
                       </div>
                       <div className="space-y-1">
+                        {/* Existing appointments */}
                         {dayAppointments.map((apt) => (
                           <button
                             key={apt.id}
@@ -421,190 +432,210 @@ function AppointmentsCalendarContent() {
                             )}
                           </button>
                         ))}
-                        {dayAppointments.length === 0 && (
-                          <p className="text-[10px] text-muted-foreground">No appointments</p>
-                        )}
+
+                        {/* Blocked times */}
+                        {blockedTimes
+                          ?.filter(bt => isSameDay(new Date(bt.startTime), day))
+                          .map(bt => (
+                            <div
+                              key={bt.id}
+                              className="w-full text-left text-xs p-1 rounded bg-red-200/50 mb-1"
+                              title={bt.reason || "Blocked time"}
+                            >
+                              <span className="block font-medium">
+                                {format(new Date(bt.startTime), "p")} – {format(new Date(bt.endTime), "p")} (Blocked)
+                              </span>
+                              {bt.reason && (
+                                <span className="block text-[10px] text-muted-foreground">
+                                  {bt.reason}
+                                </span>
+                              )}
+                            </div>
+                          ))}
                       </div>
+                      {dayAppointments.length === 0 && (
+                        <p className="text-[10px] text-muted-foreground">No appointments</p>
+                      )}
                     </div>
-                  )
-                })}
-              </div>
+            )
+            })}
+          </div>
             )}
-          </CardContent>
-        </Card>
+        </CardContent>
+      </Card>
 
-        {/* Dialog for Appointment Details/Edit/Create */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{selectedAppointment ? (isEditing ? "Edit Appointment" : "Appointment Details") : "Create Appointment"}</DialogTitle>
-              <DialogDescription>
-                {selectedAppointment
-                  ? isEditing
-                    ? "Edit the appointment details"
-                    : "View and manage this appointment"
-                  : "Schedule a new appointment manually"}
-              </DialogDescription>
-            </DialogHeader>
+      {/* Dialog for Appointment Details/Edit/Create */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedAppointment ? (isEditing ? "Edit Appointment" : "Appointment Details") : "Create Appointment"}</DialogTitle>
+            <DialogDescription>
+              {selectedAppointment
+                ? isEditing
+                  ? "Edit the appointment details"
+                  : "View and manage this appointment"
+                : "Schedule a new appointment manually"}
+            </DialogDescription>
+          </DialogHeader>
 
-            {selectedAppointment ? (
-              isEditing ? (
-                <form onSubmit={handleEditSubmit} className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="service">Service</Label>
-                    <Select
-                      value={String(formData.serviceId)}
-                      onValueChange={(value) => setFormData({ ...formData, serviceId: Number(value) })}
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a service" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {services?.map((service) => (
-                          <SelectItem key={service.id} value={String(service.id)}>
-                            {service.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="startTime">Start Time</Label>
-                    <Input
-                      id="startTime"
-                      type="datetime-local"
-                      value={formData.startTime}
-                      onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={updateMutation.isPending}>
-                      Save
-                    </Button>
-                  </DialogFooter>
-                </form>
-              ) : (
-                <div className="space-y-4 py-4">
-                  <div>
-                    <Label>Service</Label>
-                    <p className="text-sm">{selectedAppointment.service?.name}</p>
-                  </div>
-                  <div>
-                    <Label>Client</Label>
-                    <p className="text-sm">
-                      {selectedAppointment.user?.firstName} {selectedAppointment.user?.lastName}
-                    </p>
-                  </div>
-                  <div>
-                    <Label>Time</Label>
-                    <p className="text-sm">
-                      {format(new Date(selectedAppointment.startTime), "PPp")} - {format(new Date(selectedAppointment.endTime), "p")}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select value={selectedAppointment.status} onValueChange={handleStatusChange}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="scheduled">Scheduled</SelectItem>
-                        <SelectItem value="done">Done</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <DialogFooter className="gap-2">
-                    <Button variant="outline" onClick={() => setIsEditing(true)}>Edit</Button>
-                    <Button variant="destructive" onClick={handleDelete}>Delete</Button>
-                    <Button variant="outline" onClick={handleCloseDialog}>Close</Button>
-                  </DialogFooter>
+          {selectedAppointment ? (
+            isEditing ? (
+              <form onSubmit={handleEditSubmit} className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="service">Service</Label>
+                  <Select
+                    value={String(formData.serviceId)}
+                    onValueChange={(value) => setFormData({ ...formData, serviceId: Number(value) })}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a service" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {services?.map((service) => (
+                        <SelectItem key={service.id} value={String(service.id)}>
+                          {service.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              )
-            ) : (
-              <form onSubmit={handleSubmit}>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="customer">Client</Label>
-                    <Select
-                      value={selectedCustomerId || ""}
-                      onValueChange={(value) => setSelectedCustomerId(value)}
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a client" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {customers?.map((customer) => (
-                          <SelectItem key={customer.id} value={customer.id}>
-                            {customer.firstName} {customer.lastName} ({customer.email})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="service">Service</Label>
-                    <Select
-                      value={String(formData.serviceId)}
-                      onValueChange={(value) => setFormData({ ...formData, serviceId: Number(value) })}
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a service" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {services?.map((service) => (
-                          <SelectItem key={service.id} value={String(service.id)}>
-                            {service.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="startTime">Start Time</Label>
-                    <Input
-                      id="startTime"
-                      type="datetime-local"
-                      value={formData.startTime}
-                      onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                      required
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="startTime">Start Time</Label>
+                  <Input
+                    id="startTime"
+                    type="datetime-local"
+                    value={formData.startTime}
+                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                    required
+                  />
                 </div>
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={handleCloseDialog}>
+                  <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={createMutation.isPending}>
-                    Create
+                  <Button type="submit" disabled={updateMutation.isPending}>
+                    Save
                   </Button>
                 </DialogFooter>
               </form>
-            )}
-          </DialogContent>
-        </Dialog>
+            ) : (
+              <div className="space-y-4 py-4">
+                <div>
+                  <Label>Service</Label>
+                  <p className="text-sm">{selectedAppointment.service?.name}</p>
+                </div>
+                <div>
+                  <Label>Client</Label>
+                  <p className="text-sm">
+                    {selectedAppointment.user?.firstName} {selectedAppointment.user?.lastName}
+                  </p>
+                </div>
+                <div>
+                  <Label>Time</Label>
+                  <p className="text-sm">
+                    {format(new Date(selectedAppointment.startTime), "PPp")} - {format(new Date(selectedAppointment.endTime), "p")}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select value={selectedAppointment.status} onValueChange={handleStatusChange}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="scheduled">Scheduled</SelectItem>
+                      <SelectItem value="done">Done</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <DialogFooter className="gap-2">
+                  <Button variant="outline" onClick={() => setIsEditing(true)}>Edit</Button>
+                  <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+                  <Button variant="outline" onClick={handleCloseDialog}>Close</Button>
+                </DialogFooter>
+              </div>
+            )
+          ) : (
+            <form onSubmit={handleSubmit}>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="customer">Client</Label>
+                  <Select
+                    value={selectedCustomerId || ""}
+                    onValueChange={(value) => setSelectedCustomerId(value)}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a client" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customers?.map((customer) => (
+                        <SelectItem key={customer.id} value={customer.id}>
+                          {customer.firstName} {customer.lastName} ({customer.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-        {/* Dialog for Waitlist Management */}
-        <Dialog open={isWaitlistOpen} onOpenChange={setIsWaitlistOpen}>
-          <DialogContent className="max-w-4xl">
-            <DialogHeader>
-              <DialogTitle>Waitlist Management</DialogTitle>
-              <DialogDescription>View and manage all waitlist entries</DialogDescription>
-            </DialogHeader>
-            <AdminWaitlist services={services || []} />
-          </DialogContent>
-        </Dialog>
-      </div>
+                <div className="space-y-2">
+                  <Label htmlFor="service">Service</Label>
+                  <Select
+                    value={String(formData.serviceId)}
+                    onValueChange={(value) => setFormData({ ...formData, serviceId: Number(value) })}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a service" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {services?.map((service) => (
+                        <SelectItem key={service.id} value={String(service.id)}>
+                          {service.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="startTime">Start Time</Label>
+                  <Input
+                    id="startTime"
+                    type="datetime-local"
+                    value={formData.startTime}
+                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={handleCloseDialog}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createMutation.isPending}>
+                  Create
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog for Waitlist Management */}
+      <Dialog open={isWaitlistOpen} onOpenChange={setIsWaitlistOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Waitlist Management</DialogTitle>
+            <DialogDescription>View and manage all waitlist entries</DialogDescription>
+          </DialogHeader>
+          <AdminWaitlist services={services || []} />
+        </DialogContent>
+      </Dialog>
     </div>
+    </div >
   )
 }
 
