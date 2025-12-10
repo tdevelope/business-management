@@ -122,7 +122,7 @@ export class AppointmentsService {
 
     await this.prisma.appointment.update({
       where: { id: appointment.id },
-      data: { reminderJobId: job.id },
+      data: { reminderJobId: job.id.toString() },
     });
 
     return appointment;
@@ -270,7 +270,7 @@ export class AppointmentsService {
 
         await this.prisma.appointment.update({
           where: { id: updated.id },
-          data: { reminderJobId: newJob.id },
+          data: { reminderJobId: newJob.id.toString() },
         });
       }
 
@@ -368,7 +368,7 @@ export class AppointmentsService {
 
       await this.prisma.appointment.update({
         where: { id: updated.id },
-        data: { reminderJobId: newJob.id },
+        data: { reminderJobId: newJob.id.toString() },
       });
     }
 
