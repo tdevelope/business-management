@@ -4,7 +4,7 @@ export interface User {
   lastName: string
   email: string
   phone: string
-  role: "admin" | "customer" | "staff"
+  role?: 'customer' | 'admin' | 'manager' ;
 }
 
 export interface AuthResponse {
