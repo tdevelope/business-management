@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { servicesApi } from "@/api/services"
 import { appointmentsApi } from "@/api/appointments"
-import { Calendar, Package, Settings } from "lucide-react"
+import { Calendar, Package, Settings, BarChart, Users } from "lucide-react"
 
 function AdminDashboardContent() {
   const today = format(new Date(), "yyyy-MM-dd")
@@ -31,11 +31,14 @@ function AdminDashboardContent() {
           <p className="text-muted-foreground">Manage your business operations</p>
         </div>
 
-        {/* Stats */}
+        <Link href="/admin/reports">
+          <button className="btn-primary">Reports</button>
+        </Link>
+
         <div className="grid md:grid-cols-3 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Today&apos;s Appointments</CardTitle>
+              <CardTitle className="text-sm font-medium">Today's Appointments</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -67,64 +70,57 @@ function AdminDashboardContent() {
           </Card>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Package className="h-6 w-6 text-primary" />
-                </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          {[
+            {
+              title: "Manage Services",
+              desc: "Add, edit, or remove services",
+              icon: <Package className="h-6 w-6 text-primary" />,
+              link: "/admin/services",
+              btnText: "Go to Services",
+            },
+            {
+              title: "Appointments Calendar",
+              desc: "View and manage all appointments",
+              icon: <Calendar className="h-6 w-6 text-primary" />,
+              link: "/admin/appointments",
+              btnText: "Open Calendar",
+            },
+            {
+              title: "Business Settings",
+              desc: "Opening hours & booking rules",
+              icon: <Settings className="h-6 w-6 text-primary" />,
+              link: "/admin/business-settings",
+              btnText: "Open Settings",
+            },
+            {
+              title: "Reports & Statistics",
+              desc: "View income & popular services",
+              icon: <BarChart className="h-6 w-6 text-primary" />,
+              link: "/admin/reports",
+              btnText: "Go to Reports",
+            },
+            {
+              title: "Users Management",
+              desc: "Manage clients & staff",
+              icon: <Users className="h-6 w-6 text-primary" />,
+              link: "/admin/users",
+              btnText: "Go to Users",
+            },
+          ].map((card) => (
+            <Card key={card.title} className="flex flex-col hover:shadow-lg transition-shadow p-4">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="p-2 bg-primary/10 rounded-lg shrink-0">{card.icon}</div>
                 <div>
-                  <CardTitle>Manage Services</CardTitle>
-                  <CardDescription>Add, edit, or remove services</CardDescription>
+                  <h3 className="font-semibold text-sm mb-1">{card.title}</h3>
+                  <p className="text-xs text-muted-foreground">{card.desc}</p>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full">
-                <Link href="/admin/services">Go to Services</Link>
+              <Button asChild className="w-full mt-auto">
+                <Link href={card.link}>{card.btnText}</Link>
               </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Calendar className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <CardTitle>Appointments Calendar</CardTitle>
-                  <CardDescription>View and manage all appointments</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full">
-                <Link href="/admin/appointments">Open Calendar</Link>
-              </Button>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Settings className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <CardTitle>Business Settings</CardTitle>
-                  <CardDescription>Opening hours & booking rules</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full">
-                <Link href="/admin/business-settings">Open Settings</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
+            </Card>
+          ))}
         </div>
       </div>
     </div>
