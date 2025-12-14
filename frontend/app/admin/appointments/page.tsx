@@ -67,11 +67,11 @@ function AppointmentsCalendarContent() {
     mutationFn: appointmentsApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] })
-      toast({ title: "Success", description: "Appointment created successfully!" })
+      toast({ title: "הצלחה", description: "התור נוצר בהצלחה!" })
       handleCloseDialog()
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" })
+      toast({ title: "שגיאה", description: error.message, variant: "destructive" })
     },
   })
 
@@ -79,11 +79,11 @@ function AppointmentsCalendarContent() {
     mutationFn: ({ id, data }: { id: string; data: Partial<Appointment> }) => appointmentsApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] })
-      toast({ title: "Success", description: "Appointment updated successfully!" })
+      toast({ title: "הצלחה", description: "התור עודכן בהצלחה!" })
       handleCloseDialog()
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" })
+      toast({ title: "שגיאה", description: error.message, variant: "destructive" })
     },
   })
 
@@ -91,11 +91,11 @@ function AppointmentsCalendarContent() {
     mutationFn: appointmentsApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] })
-      toast({ title: "Success", description: "Appointment deleted successfully!" })
+      toast({ title: "הצלחה", description: "התור נמחק בהצלחה!" })
       handleCloseDialog()
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" })
+      toast({ title: "שגיאה", description: error.message, variant: "destructive" })
     },
   })
 
@@ -129,7 +129,7 @@ function AppointmentsCalendarContent() {
     const time = timeWithSeconds?.slice(0, 5)
 
     if (!datePart || !time || !formData.serviceId) {
-      toast({ title: "Error", description: "Please fill all required fields", variant: "destructive" })
+      toast({ title: "שגיאה", description: "אנא מלא את כל השדות הנדרשים", variant: "destructive" })
       return
     }
 
@@ -184,7 +184,7 @@ function AppointmentsCalendarContent() {
   }
 
   const handleDelete = () => {
-    if (selectedAppointment && confirm("Are you sure you want to delete this appointment?")) {
+    if (selectedAppointment && confirm("האם אתה בטוח שברצונך למחוק תור זה?")) {
       deleteMutation.mutate(selectedAppointment.id)
     }
   }
@@ -264,31 +264,32 @@ function AppointmentsCalendarContent() {
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Appointments Calendar</h1>
-            <p className="text-muted-foreground">View and manage all appointments</p>
-          </div>
-          <div className="flex gap-2">
+        <div className="flex items-center mb-8">
+          <div className="flex gap-2 ml-auto">
             <Button onClick={() => handleOpenDialog()}>
               <Plus className="mr-2 h-4 w-4" />
-              New Appointment
+              תור חדש
             </Button>
             <Button onClick={() => setIsWaitlistOpen(true)}>
               <Calendar className="mr-2 h-4 w-4" />
-              Manage Waitlist
+              ניהול רשימת המתנה
             </Button>
+          </div>
+          <div>
+            <h1 className="text-4xl font-bold mb-2">יומן התורים</h1>
+            <p className="text-muted-foreground">הצגה וניהול של כל התורים</p>
+          </div>
           </div>
         </div>
 
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Calendar View</CardTitle>
+            <CardTitle>תצוגת לוח שנה</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-4 items-end">
               <div className="space-y-2">
-                <Label htmlFor="date">Date</Label>
+                <Label htmlFor="date">תאריך</Label>
                 <Input
                   id="date"
                   type="date"
@@ -298,13 +299,13 @@ function AppointmentsCalendarContent() {
               </div>
               <div className="flex gap-2">
                 <Button type="button" variant="outline" onClick={handlePrev}>
-                  Prev
+                  הקודם
                 </Button>
                 <Button type="button" variant="outline" onClick={handleToday}>
-                  Today
+                  היום
                 </Button>
                 <Button type="button" variant="outline" onClick={handleNext}>
-                  Next
+                  הבא
                 </Button>
               </div>
               <div className="flex gap-2">
@@ -313,21 +314,21 @@ function AppointmentsCalendarContent() {
                   variant={viewMode === "day" ? "default" : "outline"}
                   onClick={() => setViewMode("day")}
                 >
-                  Day
+                  יום
                 </Button>
                 <Button
                   type="button"
                   variant={viewMode === "week" ? "default" : "outline"}
                   onClick={() => setViewMode("week")}
                 >
-                  Week
+                  שבוע
                 </Button>
                 <Button
                   type="button"
                   variant={viewMode === "month" ? "default" : "outline"}
                   onClick={() => setViewMode("month")}
                 >
-                  Month
+                  חודש
                 </Button>
               </div>
             </div>
@@ -338,14 +339,14 @@ function AppointmentsCalendarContent() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Appointments for {periodLabel()}
+              תורים עבור {periodLabel()}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <p className="text-muted-foreground">Loading...</p>
+              <p className="text-muted-foreground">טוען...</p>
             ) : !appointments || appointments.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No appointments found</p>
+              <p className="text-muted-foreground text-center py-8">לא נמצאו תורים</p>
             ) : viewMode === "day" ? (
               <>
                 {getAppointmentsForDay(currentDate).length > 0 ? (
@@ -385,7 +386,7 @@ function AppointmentsCalendarContent() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-muted-foreground text-center py-8">No appointments for this day</p>
+                  <p className="text-muted-foreground text-center py-8">לא נמצאו תורים ליום זה</p>
                 )}
               </>
             ) : (
@@ -440,10 +441,10 @@ function AppointmentsCalendarContent() {
                             <div
                               key={bt.id}
                               className="w-full text-left text-xs p-1 rounded bg-red-200/50 mb-1"
-                              title={bt.reason || "Blocked time"}
+                              title={bt.reason || "זמן חסום"}
                             >
                               <span className="block font-medium">
-                                {format(new Date(bt.startTime), "p")} – {format(new Date(bt.endTime), "p")} (Blocked)
+                                {format(new Date(bt.startTime), "p")} – {format(new Date(bt.endTime), "p")} (חסום)
                               </span>
                               {bt.reason && (
                                 <span className="block text-[10px] text-muted-foreground">
@@ -454,7 +455,7 @@ function AppointmentsCalendarContent() {
                           ))}
                       </div>
                       {dayAppointments.length === 0 && (
-                        <p className="text-[10px] text-muted-foreground">No appointments</p>
+                        <p className="text-[10px] text-muted-foreground">לא נמצאו תורים</p>
                       )}
                     </div>
             )
@@ -501,7 +502,7 @@ function AppointmentsCalendarContent() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="startTime">Start Time</Label>
+                  <Label htmlFor="startTime">זמן התחלה</Label>
                   <Input
                     id="startTime"
                     type="datetime-local"
@@ -512,48 +513,48 @@ function AppointmentsCalendarContent() {
                 </div>
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
-                    Cancel
+                    ביטול
                   </Button>
                   <Button type="submit" disabled={updateMutation.isPending}>
-                    Save
+                    שמור
                   </Button>
                 </DialogFooter>
               </form>
             ) : (
               <div className="space-y-4 py-4">
                 <div>
-                  <Label>Service</Label>
+                  <Label>שירות</Label>
                   <p className="text-sm">{selectedAppointment.service?.name}</p>
                 </div>
                 <div>
-                  <Label>Client</Label>
+                  <Label>לקוח</Label>
                   <p className="text-sm">
                     {selectedAppointment.user?.firstName} {selectedAppointment.user?.lastName}
                   </p>
                 </div>
                 <div>
-                  <Label>Time</Label>
+                  <Label>זמן</Label>
                   <p className="text-sm">
                     {format(new Date(selectedAppointment.startTime), "PPp")} - {format(new Date(selectedAppointment.endTime), "p")}
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
+                  <Label htmlFor="status">סטטוס</Label>
                   <Select value={selectedAppointment.status} onValueChange={handleStatusChange}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="scheduled">Scheduled</SelectItem>
-                      <SelectItem value="done">Done</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                      <SelectItem value="scheduled">מתוזמן</SelectItem>
+                      <SelectItem value="done">הושלם</SelectItem>
+                      <SelectItem value="cancelled">בוטל</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <DialogFooter className="gap-2">
-                  <Button variant="outline" onClick={() => setIsEditing(true)}>Edit</Button>
-                  <Button variant="destructive" onClick={handleDelete}>Delete</Button>
-                  <Button variant="outline" onClick={handleCloseDialog}>Close</Button>
+                  <Button variant="outline" onClick={() => setIsEditing(true)}>ערוך</Button>
+                  <Button variant="destructive" onClick={handleDelete}>מחק</Button>
+                  <Button variant="outline" onClick={handleCloseDialog}>סגור</Button>
                 </DialogFooter>
               </div>
             )
@@ -561,14 +562,14 @@ function AppointmentsCalendarContent() {
             <form onSubmit={handleSubmit}>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="customer">Client</Label>
+                  <Label htmlFor="customer">לקוח</Label>
                   <Select
                     value={selectedCustomerId || ""}
                     onValueChange={(value) => setSelectedCustomerId(value)}
                     required
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a client" />
+                      <SelectValue placeholder="בחר לקוח" />
                     </SelectTrigger>
                     <SelectContent>
                       {customers?.map((customer) => (
@@ -581,14 +582,14 @@ function AppointmentsCalendarContent() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="service">Service</Label>
+                  <Label htmlFor="service">שירות</Label>
                   <Select
                     value={String(formData.serviceId)}
                     onValueChange={(value) => setFormData({ ...formData, serviceId: Number(value) })}
                     required
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a service" />
+                      <SelectValue placeholder="בחר שירות" />
                     </SelectTrigger>
                     <SelectContent>
                       {services?.map((service) => (
@@ -601,7 +602,7 @@ function AppointmentsCalendarContent() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="startTime">Start Time</Label>
+                  <Label htmlFor="startTime">זמן התחלה</Label>
                   <Input
                     id="startTime"
                     type="datetime-local"
@@ -613,10 +614,10 @@ function AppointmentsCalendarContent() {
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                  Cancel
+                  ביטול
                 </Button>
                 <Button type="submit" disabled={createMutation.isPending}>
-                  Create
+                  צור
                 </Button>
               </DialogFooter>
             </form>
@@ -628,14 +629,13 @@ function AppointmentsCalendarContent() {
       <Dialog open={isWaitlistOpen} onOpenChange={setIsWaitlistOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Waitlist Management</DialogTitle>
-            <DialogDescription>View and manage all waitlist entries</DialogDescription>
+            <DialogTitle>ניהול רשימת המתנה</DialogTitle>
+            <DialogDescription>הצגת וניהול כל הערכים ברשימת ההמתנה</DialogDescription>
           </DialogHeader>
           <AdminWaitlist services={services || []} />
         </DialogContent>
       </Dialog>
     </div>
-    </div >
   )
 }
 

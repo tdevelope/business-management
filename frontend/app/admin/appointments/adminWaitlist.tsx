@@ -119,14 +119,14 @@ export function AdminWaitlist({ services }: AdminWaitlistProps) {
       </div>
 
       {isLoading ? (
-        <p>Loading waitlist...</p>
+        <p>...טוען רשימת המתנה</p>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredWaitlist?.map((entry) => (
             <Card key={entry.id}>
               <CardHeader>
-                <CardTitle className="flex justify-between items-start">
-                  <span>User {entry.userId}</span>
+                <CardTitle className="flex flex-col">
+                  <span className="mb-2">לקוח {entry.userId}</span>
                   <div className="flex gap-2">
                     <Button size="icon" variant="ghost" onClick={() => handleOpenDialog(entry)}>
                       <Pencil className="h-4 w-4" />
@@ -138,10 +138,10 @@ export function AdminWaitlist({ services }: AdminWaitlistProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-1 text-sm">
-                <p>Service ID: {entry.serviceId}</p>
-                <p>Date: {entry.preferredDate}</p>
-                <p>Time: {entry.preferredTime}</p>
-                <p>Status: {entry.status}</p>
+                <p>קוד שירות: {entry.serviceId}</p>
+                <p>תאריך: {entry.preferredDate}</p>
+                <p>שעה: {entry.preferredTime}</p>
+                <p>סטטוס: {entry.status}</p>
               </CardContent>
             </Card>
           ))}
@@ -151,12 +151,12 @@ export function AdminWaitlist({ services }: AdminWaitlistProps) {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Waitlist Entry</DialogTitle>
-            <DialogDescription>Update the preferred date and time</DialogDescription>
+            <DialogTitle>ערוך רשומת המתנה</DialogTitle>
+            <DialogDescription>עדכן את התאריך והשעה המועדפים</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="preferredDate">Preferred Date</Label>
+              <Label htmlFor="preferredDate">תאריך מועדף</Label>
               <Input
                 id="preferredDate"
                 type="date"
@@ -166,7 +166,7 @@ export function AdminWaitlist({ services }: AdminWaitlistProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="preferredTime">Preferred Time</Label>
+              <Label htmlFor="preferredTime">זמן מועדף</Label>
               <Input
                 id="preferredTime"
                 type="time"
@@ -177,10 +177,10 @@ export function AdminWaitlist({ services }: AdminWaitlistProps) {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                Cancel
+                בטל
               </Button>
               <Button type="submit" disabled={updateMutation.isPending}>
-                Update
+                עדכן
               </Button>
             </DialogFooter>
           </form>

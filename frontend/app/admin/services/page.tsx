@@ -45,11 +45,11 @@ function ManageServicesContent() {
     mutationFn: servicesApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["services"] })
-      toast({ title: "Success", description: "Service created successfully!" })
+      toast({ title: "הצלחה", description: "שירות נוצר בהצלחה!" })
       handleCloseDialog()
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" })
+      toast({ title: "שגיאה", description: error.message, variant: "destructive" })
     },
   })
 
@@ -57,11 +57,11 @@ function ManageServicesContent() {
     mutationFn: ({ id, data }: { id: string; data: Partial<Service> }) => servicesApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["services"] })
-      toast({ title: "Success", description: "Service updated successfully!" })
+      toast({ title: "הצלחה", description: "השירות עודכן בהצלחה!" })
       handleCloseDialog()
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" })
+      toast({ title: "שגיאה", description: error.message, variant: "destructive" })
     },
   })
 
@@ -69,10 +69,10 @@ function ManageServicesContent() {
     mutationFn: servicesApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["services"] })
-      toast({ title: "Success", description: "Service deleted successfully!" })
+      toast({ title: "הצלחה", description: "השירות נמחק בהצלחה!" })
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" })
+      toast({ title: "שגיאה", description: error.message, variant: "destructive" })
     },
   })
 
@@ -115,7 +115,7 @@ function ManageServicesContent() {
   }
 
   const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this service?")) {
+    if (confirm("האם אתה בטוח שברצונך למחוק שירות זה?")) {
       deleteMutation.mutate(id)
     }
   }
@@ -123,26 +123,26 @@ function ManageServicesContent() {
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Manage Services</h1>
-            <p className="text-muted-foreground">Add, edit, or remove services</p>
-          </div>
+        <div className="flex items-center mb-8 justify-between">
           <Button onClick={() => handleOpenDialog()}>
             <Plus className="mr-2 h-4 w-4" />
-            Add Service
+            הוסף שירות
           </Button>
+          <div className="text-right">
+            <h1 className="text-4xl font-bold mb-2">ניהול שירותים</h1>
+            <p className="text-muted-foreground">הוסף, ערוך או הסר שירותים</p>
+          </div>
         </div>
 
         {isLoading ? (
-          <p>Loading services...</p>
+          <p>טוען שירותים...</p>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {services?.map((service) => (
               <Card key={service.id}>
                 <CardHeader>
-                  <CardTitle className="flex justify-between items-start">
-                    <span>{service.name}</span>
+                  <CardTitle className="flex flex-col justify-start">
+                    <span className="mb-2">{service.name}</span>
                     <div className="flex gap-2">
                       <Button size="icon" variant="ghost" onClick={() => handleOpenDialog(service)}>
                         <Pencil className="h-4 w-4" />
@@ -155,9 +155,9 @@ function ManageServicesContent() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {service.description && <p className="text-sm text-muted-foreground">{service.description}</p>}
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{service.duration} minutes</span>
-                    <span className="font-semibold">${service.price}</span>
+                  <div className="flex items-center text-sm gap-4">
+                    <span className="text-muted-foreground">{service.duration} דקות</span>
+                    <span className="font-semibold">₪{service.price}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -168,15 +168,15 @@ function ManageServicesContent() {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingService ? "Edit Service" : "Add New Service"}</DialogTitle>
+              <DialogTitle>{editingService ? "עריכת שירות" : "הוספת שירות חדש"}</DialogTitle>
               <DialogDescription>
-                {editingService ? "Update the service details below" : "Fill in the details for the new service"}
+                {editingService ? "עדכן את פרטי השירות למטה" : "הזן את פרטי השירות החדש"}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit}>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Service Name</Label>
+                  <Label htmlFor="name">שם השירות</Label>
                   <Input
                     id="name"
                     value={formData.name}
@@ -185,7 +185,7 @@ function ManageServicesContent() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">תיאור</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
@@ -195,7 +195,7 @@ function ManageServicesContent() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="duration">Duration (minutes)</Label>
+                    <Label htmlFor="duration">משך (דקות)</Label>
                     <Input
                       id="duration"
                       type="number"
@@ -205,7 +205,7 @@ function ManageServicesContent() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="price">Price ($)</Label>
+                    <Label htmlFor="price">מחיר (₪)</Label>
                     <Input
                       id="price"
                       type="number"
@@ -219,10 +219,10 @@ function ManageServicesContent() {
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                  Cancel
+                  ביטול
                 </Button>
                 <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                  {editingService ? "Update" : "Create"}
+                  {editingService ? "עדכן" : "צור"}
                 </Button>
               </DialogFooter>
             </form>

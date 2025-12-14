@@ -43,8 +43,12 @@ echo ""
 
 echo "Running Prisma migrations..."
 npx prisma migrate deploy --schema=./prisma/schema.prisma
-npx prisma db seed
 echo "✓ Migrations applied"
+echo ""
+
+echo "Running database seed (will skip if admin already exists)..."
+# Run seed with ts-node using tsx wrapper for better TypeScript support in Docker
+npx tsx prisma/seed.ts || echo "⚠ Seed skipped (admin user may already exist)"
 echo ""
 
 # Locate built entry file (prefer dist/src/main.js)

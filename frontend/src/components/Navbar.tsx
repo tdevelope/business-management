@@ -26,10 +26,10 @@ export function Navbar() {
           {!isAuthenticated ? (
             <>
               <Button asChild variant="ghost">
-                <Link href="/login">Login</Link>
+                <Link href="/login">כניסה</Link>
               </Button>
               <Button asChild>
-                <Link href="/register">Register</Link>
+                <Link href="/register">הרשמה</Link>
               </Button>
             </>
           ) : (
@@ -38,21 +38,21 @@ export function Navbar() {
                 <Dialog>
                   <DialogTrigger asChild>
                     <div className="flex items-center gap-2 cursor-pointer">
+                      <span className="text-sm text-muted-foreground">
+                        {user.firstName} {user.lastName}
+                      </span>
                       <div
                         className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
                         style={{ backgroundColor: hashColor(user.email) }}
                       >
                         {user.firstName?.[0].toUpperCase()}
                       </div>
-                      <span className="text-sm text-muted-foreground">
-                        {user.firstName} {user.lastName}
-                      </span>
                     </div>
                   </DialogTrigger>
 
                   <DialogContent className="max-w-lg">
                     <DialogHeader>
-                      <DialogTitle>My Profile</DialogTitle>
+                      <DialogTitle>הפרופיל שלי</DialogTitle>
                     </DialogHeader>
                     <ProfileContent />
                   </DialogContent>
@@ -61,17 +61,17 @@ export function Navbar() {
 
               {user?.role === "admin" && (
                 <Button asChild variant="outline" size="sm">
-                  <Link href="/admin">Admin Dashboard</Link>
+                  <Link href="/admin">לוח בקרה</Link>
                 </Button>
               )}
               {user?.role === "customer" && (
                 <Button asChild variant="outline" size="sm">
-                  <Link href="/customer">My Appointments</Link>
+                  <Link href="/customer">התורים שלי</Link>
                 </Button>
               )}
 
               <Button onClick={logout} variant="ghost" size="sm">
-                Logout
+                התנתקות
               </Button>
             </>
           )}

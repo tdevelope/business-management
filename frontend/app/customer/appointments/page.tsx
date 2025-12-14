@@ -74,15 +74,15 @@ function MyAppointmentsContent() {
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-4xl font-bold mb-2">My Appointments</h1>
-            <p className="text-muted-foreground">View and manage your appointments</p>
+            <h1 className="text-4xl font-bold mb-2">התורים שלי</h1>
+            <p className="text-muted-foreground">הצג וניהול את התורים שלך</p>
           </div>
           <Link 
             href="/customer/my-waitlist" 
             className="inline-flex items-center gap-2 px-4 py-2 border rounded hover:bg-accent transition-colors"
           >
             <Calendar className="h-4 w-4" />
-            My Waitlist
+            רשימת ההמתנה שלי
           </Link>
         </div>
 
@@ -94,7 +94,7 @@ function MyAppointmentsContent() {
               setSelectedMonth(e.target.value === "" ? null : Number(e.target.value))
             }
           >
-            <option value="">All months</option>
+            <option value="">כל החודשים</option>
             {Array.from({ length: 12 }).map((_, i) => (
               <option key={i} value={i}>
                 {format(new Date(2024, i, 1), "LLLL")}
@@ -110,7 +110,7 @@ function MyAppointmentsContent() {
               setSelectedDay(e.target.value === "" ? null : Number(e.target.value))
             }
           >
-            <option value="">All days</option>
+            <option value="">כל הימים</option>
             {Array.from({ length: 31 }).map((_, i) => (
               <option key={i + 1} value={i + 1}>
                 {i + 1}
@@ -125,14 +125,14 @@ function MyAppointmentsContent() {
               setSelectedDay(null)
             }}
           >
-            Clear
+            נקה
           </button>
         </div>
 
         <Card>
           <CardContent className="pt-6">
             {isLoading ? (
-              <p className="text-muted-foreground">Loading...</p>
+              <p className="text-muted-foreground">טוען...</p>
             ) : appointments && appointments.length > 0 ? (
               filtered.length > 0 ? (
                 <div className="space-y-4">
@@ -144,9 +144,9 @@ function MyAppointmentsContent() {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div>
-                          <h3 className="font-semibold text-lg">{apt.service?.name || "Service"}</h3>
+                          <h3 className="font-semibold text-lg">{apt.service?.name || "שירות"}</h3>
                           <p className="text-sm text-muted-foreground">
-                            {format(new Date(apt.startTime), "PPP")} –  {format(new Date(apt.startTime), "p")} to {format(new Date(apt.endTime), "p")}
+                            {format(new Date(apt.startTime), "PPP")} – בין {format(new Date(apt.startTime), "p")} ל-{format(new Date(apt.endTime), "p")}
                           </p>
                         </div>
                         <span
@@ -159,13 +159,13 @@ function MyAppointmentsContent() {
                                 : "bg-blue-100 text-blue-800"
                             }`}
                         >
-                          {apt.status}
+                          {apt.status === "scheduled" ? "מתוזמן" : apt.status === "done" ? "הושלם" : apt.status === "cancelled" ? "בוטל" : apt.status}
                         </span>
                       </div>
                       {apt.service && (
                         <div className="flex gap-4 text-sm text-muted-foreground">
-                          <span>{apt.service.duration} minutes</span>
-                          <span>${apt.service.price}</span>
+                          <span>{apt.service.duration} דקות</span>
+                          <span>₪{apt.service.price}</span>
                         </div>
                       )}
                     </div>
@@ -173,11 +173,11 @@ function MyAppointmentsContent() {
                 </div>
               ) : (
                 <p className="text-muted-foreground text-center py-8">
-                  No appointments match the selected filters
+                  אין תורים המתאימים לסינונים שנבחרו
                 </p>
               )
             ) : (
-              <p className="text-muted-foreground text-center py-8">You have no appointments</p>
+              <p className="text-muted-foreground text-center py-8">אין לך תורים</p>
             )}
           </CardContent>
         </Card>
@@ -186,12 +186,12 @@ function MyAppointmentsContent() {
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Edit Appointment</DialogTitle>
-                <DialogDescription>Select a new date and preferred time</DialogDescription>
+                <DialogTitle>עריכת תור</DialogTitle>
+                <DialogDescription>בחר תאריך וזמן מועדף חדש</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="date">Date</Label>
+                  <Label htmlFor="date">תאריך</Label>
                   <Input
                     id="date"
                     type="date"
@@ -200,7 +200,7 @@ function MyAppointmentsContent() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="time">Preferred Time</Label>
+                  <Label htmlFor="time">זמן מועדף</Label>
                   <Input
                     id="time"
                     type="time"
@@ -220,11 +220,11 @@ function MyAppointmentsContent() {
                   }}
                   className="w-full"
                 >
-                  Get Suggestions
+                  קבל הצעות
                 </Button>
                 {suggestions.length > 0 && (
                   <div className="space-y-2">
-                    <Label>Available Times</Label>
+                    <Label>זמנים פנויים</Label>
                     <div className="space-y-2">
                       {suggestions.map((s, idx) => (
                         <Button
@@ -245,15 +245,15 @@ function MyAppointmentsContent() {
                               queryClient.invalidateQueries({ queryKey: ["myAppointments"] })
 
                               toast({
-                                title: "Appointment updated",
-                                description: `Your appointment on ${format(new Date(s.start), "PPP p")} was updated successfully.`,
+                                title: "התור עודכן",
+                                description: `התור שלך בתאריך ${format(new Date(s.start), "PPP p")} עודכן בהצלחה.`,
                               })
 
                             } catch (err: any) {
                               console.error(err)
                               toast({
-                                title: "Error",
-                                description: err.message || "Failed to update appointment",
+                                title: "שגיאה",
+                                description: err.message || "כישלון בעדכון התור",
                                 variant: "destructive"
                               })
                             }
@@ -266,7 +266,7 @@ function MyAppointmentsContent() {
                   </div>
                 )}
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="w-full">
-                  Cancel
+                  ביטול
                 </Button>
               </div>
             </DialogContent>

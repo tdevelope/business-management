@@ -56,10 +56,10 @@ function MyWaitlistContent() {
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Appointments
+            חזור לתורים
           </Link>
-          <h1 className="text-4xl font-bold mb-2">My Waitlist</h1>
-          <p className="text-muted-foreground">View your waitlist entries</p>
+          <h1 className="text-4xl font-bold mb-2">רשימת ההמתנה שלי</h1>
+          <p className="text-muted-foreground">הצג את הערכים ברשימת ההמתנה שלך</p>
         </div>
 
         <div className="flex gap-4 mb-6">
@@ -73,22 +73,22 @@ function MyWaitlistContent() {
             variant="outline"
             onClick={() => setSelectedMonth("")}
           >
-            Clear
+            נקה
           </Button>
         </div>
 
         <Card>
           <CardContent className="pt-6">
             {isLoading ? (
-              <p className="text-muted-foreground">Loading waitlist...</p>
+              <p className="text-muted-foreground">טוען רשימת המתנה...</p>
             ) : error ? (
               <div className="text-center py-8">
-                <p className="text-destructive mb-2">Error loading waitlist</p>
+                <p className="text-destructive mb-2">שגיאה בטעינת רשימת ההמתנה</p>
                 <p className="text-sm text-muted-foreground">{String(error)}</p>
               </div>
             ) : !waitlist ? (
               <p className="text-muted-foreground text-center py-8">
-                Unable to load waitlist
+                לא ניתן לטעון רשימת המתנה
               </p>
             ) : filtered && filtered.length > 0 ? (
               <div className="space-y-4">
@@ -100,7 +100,7 @@ function MyWaitlistContent() {
                           {getServiceName(entry.serviceId)}
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                          Date: {format(new Date(entry.preferredDate), "PPP")} | Time: {entry.preferredTime}
+                          תאריך: {format(new Date(entry.preferredDate), "PPP")} | זמן: {entry.preferredTime}
                         </p>
                       </div>
                       <span
@@ -114,7 +114,7 @@ function MyWaitlistContent() {
                                 : "bg-red-100 text-red-800"
                         }`}
                       >
-                        {entry.status}
+                        {entry.status === "pending" ? "בהמתנה" : entry.status === "scheduled" ? "מתוזמן" : entry.status === "expired" ? "פג תוקף" : entry.status}
                       </span>
                     </div>
                   </div>
@@ -123,13 +123,13 @@ function MyWaitlistContent() {
             ) : (
               <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">
-                  You have no waitlist entries
+                  אין לך הערכים ברשימת ההמתנה
                 </p>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Join a waitlist when booking a service that doesn't have available times
+                  הצטרף לרשימת המתנה כשאתה מזמין שירות שאין לו זמנים פנויים
                 </p>
                 <Link href="/customer/book">
-                  <Button>Book a Service</Button>
+                  <Button>הזמן שירות</Button>
                 </Link>
               </div>
             )}

@@ -6,4 +6,4 @@ npm-debug.log
 .env
 .env.local
 dist
-*.log
+.log
