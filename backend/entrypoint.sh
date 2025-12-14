@@ -2,55 +2,36 @@
 set -e
 
 ## Minimal entrypoint
-# Behavior:
-# - perform a short DB readiness probe using bash's built-in TCP (10 attempts, 1s apart)
-# - do NOT run long waits or try building/migrating here (keeps entrypoint simple as requested).
-# - locate and run the built file; prefer dist/src/main.js, then dist/main.js, then dist/index.js.
-
-# Extract DB_HOST and DB_PORT from DATABASE_URL if available
-# DATABASE_URL format: postgresql://user:pass@host:port/dbname
-if [ -n "$DATABASE_URL" ]; then
-  # Extract host: everything between @ and : (before port) or / (if no port)
-  DB_HOST=$(echo "$DATABASE_URL" | awk -F[@:/] '{print $4}')
-  # Extract port: number after the second : and before /
-  DB_PORT=$(echo "$DATABASE_URL" | awk -F: '{print $4}' | awk -F/ '{print $1}')
-  
-  # Fallback to 5432 if port extraction failed
-  if [ -z "$DB_PORT" ] || [ "$DB_PORT" = "$DB_HOST" ]; then
-    DB_PORT=5432
-  fi
-  
-  echo "📡 Extracted DB connection from DATABASE_URL: ${DB_HOST}:${DB_PORT}"
-else
-  # Fallback to environment variables or defaults (for Docker Compose)
-  DB_HOST=${DB_HOST:-db}
-  DB_PORT=${DB_PORT:-5432}
-  echo "📡 Using DB_HOST and DB_PORT environment variables: ${DB_HOST}:${DB_PORT}"
-fi
+# Use pg_isready to check database connection (works with DATABASE_URL directly)
 
 TRY_COUNT=20
-WAIT_SECS=1
+WAIT_SECS=2
 
-echo "Probing DB at ${DB_HOST}:${DB_PORT} (up to ${TRY_COUNT} attempts)"
+echo "📡 Checking database connection using DATABASE_URL..."
+echo "Probing database (up to ${TRY_COUNT} attempts)"
+
 success=0
 i=0
 while [ $i -lt $TRY_COUNT ]; do
   i=$((i+1))
-  # Use bash TCP redirect: try to open connection, redirect to /dev/null
-  if (echo > /dev/tcp/"$DB_HOST"/"$DB_PORT") 2>/dev/null; then
-    echo "✓ DB is reachable on ${DB_HOST}:${DB_PORT} (attempt $i)"
+  
+  # pg_isready can use DATABASE_URL directly via -d flag
+  if pg_isready -d "$DATABASE_URL" -t 1 > /dev/null 2>&1; then
+    echo "✓ Database is reachable (attempt $i)"
     success=1
     break
   fi
+  
   if [ $i -lt $TRY_COUNT ]; then
-    echo "  [attempt $i/$TRY_COUNT] DB not reachable yet... retrying"
+    echo "  [attempt $i/$TRY_COUNT] Database not reachable yet... retrying"
     sleep "$WAIT_SECS"
   fi
 done
 
 if [ "$success" -ne 1 ]; then
   echo "✗ Database not reachable after ${TRY_COUNT} attempts."
-  echo "  Debugging: Check database logs or DATABASE_URL configuration"
+  echo "  DATABASE_URL: ${DATABASE_URL}"
+  echo "  Debugging: Check database status in Render dashboard"
   exit 2
 fi
 
