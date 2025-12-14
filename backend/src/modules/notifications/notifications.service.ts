@@ -29,16 +29,22 @@ export class NotificationsService {
         html = html.replace(regex, context[key]);
       });
 
-      await this.resend.emails.send({
+      const response = await this.resend.emails.send({
         from: `${this.fromName} <${this.fromEmail}>`,
         to,
         subject,
         html,
       });
 
+      if (response?.error) {
+        this.logger.error(`Email API error for ${to}: ${JSON.stringify(response.error)}`);
+        throw new Error(`Email send failed: ${response.error}`);
+      }
+
       this.logger.log(`Email sent to ${to} (${subject})`);
     } catch (error) {
-      this.logger.error(`Failed to send email to ${to}: ${error}`);
+      this.logger.error(`Failed to send email to ${to}: ${error instanceof Error ? error.message : error}`);
+      throw error;  // Re-throw to allow job processor to handle retry
     }
   }
 

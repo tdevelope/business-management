@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bull';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ServicesModule } from './modules/services/services.module';
@@ -9,12 +10,20 @@ import { ScheduleModule } from '@nestjs/schedule/dist/schedule.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
-  imports: [AuthModule, UsersModule, ServicesModule,
-     AppointmentsModule, BusinessSettingsModule,
-     WaitlistModule, ScheduleModule.forRoot(),
-     NotificationsModule,
-    ],
+  imports: [
+    BullModule.forRoot({
+      redis: process.env.REDIS_URL || 'redis://redis:6379',
+    }),
+    AuthModule,
+    UsersModule,
+    ServicesModule,
+    AppointmentsModule,
+    BusinessSettingsModule,
+    WaitlistModule,
+    ScheduleModule.forRoot(),
+    NotificationsModule,
+  ],
   controllers: [],
   providers: [],
 })
-export class AppModule {}
+export class AppModule { }
