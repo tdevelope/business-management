@@ -10,10 +10,16 @@ set -e
 # Extract DB_HOST and DB_PORT from DATABASE_URL if available
 # DATABASE_URL format: postgresql://user:pass@host:port/dbname
 if [ -n "$DATABASE_URL" ]; then
-  # Extract host (everything between @ and the next : or /)
-  DB_HOST=$(echo "$DATABASE_URL" | sed -E 's|.*@([^:/]+).*|\1|')
-  # Extract port (number after host and before /)
-  DB_PORT=$(echo "$DATABASE_URL" | sed -E 's|.*:([0-9]+)/.*|\1|')
+  # Extract host: everything between @ and : (before port) or / (if no port)
+  DB_HOST=$(echo "$DATABASE_URL" | awk -F[@:/] '{print $4}')
+  # Extract port: number after the second : and before /
+  DB_PORT=$(echo "$DATABASE_URL" | awk -F: '{print $4}' | awk -F/ '{print $1}')
+  
+  # Fallback to 5432 if port extraction failed
+  if [ -z "$DB_PORT" ] || [ "$DB_PORT" = "$DB_HOST" ]; then
+    DB_PORT=5432
+  fi
+  
   echo "📡 Extracted DB connection from DATABASE_URL: ${DB_HOST}:${DB_PORT}"
 else
   # Fallback to environment variables or defaults (for Docker Compose)
