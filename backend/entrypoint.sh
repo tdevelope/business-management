@@ -43,6 +43,7 @@ echo ""
 
 echo "Running Prisma migrations..."
 npx prisma migrate deploy --schema=./prisma/schema.prisma
+npx prisma db seed
 echo "✓ Migrations applied"
 echo ""
 
