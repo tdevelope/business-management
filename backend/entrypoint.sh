@@ -7,8 +7,21 @@ set -e
 # - do NOT run long waits or try building/migrating here (keeps entrypoint simple as requested).
 # - locate and run the built file; prefer dist/src/main.js, then dist/main.js, then dist/index.js.
 
-DB_HOST=${DB_HOST:-db}
-DB_PORT=${DB_PORT:-5432}
+# Extract DB_HOST and DB_PORT from DATABASE_URL if available
+# DATABASE_URL format: postgresql://user:pass@host:port/dbname
+if [ -n "$DATABASE_URL" ]; then
+  # Extract host (everything between @ and the next : or /)
+  DB_HOST=$(echo "$DATABASE_URL" | sed -E 's|.*@([^:/]+).*|\1|')
+  # Extract port (number after host and before /)
+  DB_PORT=$(echo "$DATABASE_URL" | sed -E 's|.*:([0-9]+)/.*|\1|')
+  echo "📡 Extracted DB connection from DATABASE_URL: ${DB_HOST}:${DB_PORT}"
+else
+  # Fallback to environment variables or defaults (for Docker Compose)
+  DB_HOST=${DB_HOST:-db}
+  DB_PORT=${DB_PORT:-5432}
+  echo "📡 Using DB_HOST and DB_PORT environment variables: ${DB_HOST}:${DB_PORT}"
+fi
+
 TRY_COUNT=20
 WAIT_SECS=1
 
@@ -31,7 +44,7 @@ done
 
 if [ "$success" -ne 1 ]; then
   echo "✗ Database not reachable after ${TRY_COUNT} attempts."
-  echo "  Debugging: Check 'docker compose logs db' for database startup issues"
+  echo "  Debugging: Check database logs or DATABASE_URL configuration"
   exit 2
 fi
 
