@@ -1,7 +1,48 @@
+@import url("https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
+
+/* RTL Support for Hebrew */
+html[dir="rtl"] {
+  direction: rtl;
+}
+
+html[dir="rtl"] body {
+  direction: rtl;
+  text-align: right;
+  font-family: "Rubik", sans-serif;
+}
+
+body {
+  direction: rtl;
+  text-align: right;
+  font-family: "Rubik", sans-serif;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  line-height: 1.6;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Text alignment */
+html[dir="rtl"] .text-left {
+  text-align: right;
+}
+
+html[dir="rtl"] .text-right {
+  text-align: left;
+}
+
+/* Border radius */
+html[dir="rtl"] .rounded-l {
+  border-radius: 0 0.25rem 0.25rem 0;
+}
+
+html[dir="rtl"] .rounded-r {
+  border-radius: 0.25rem 0 0 0.25rem;
+}
 
 :root {
   --background: oklch(1 0 0);
@@ -121,5 +162,474 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: "Rubik", system-ui, -apple-system, sans-serif;
   }
 }
+
+/* =========================== */
+/* RTL COMPREHENSIVE SUPPORT  */
+/* =========================== */
+
+html[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Base elements RTL */
+html[dir="rtl"] body {
+  direction: rtl;
+  text-align: right;
+}
+
+html[dir="rtl"] button,
+html[dir="rtl"] input,
+html[dir="rtl"] textarea,
+html[dir="rtl"] select {
+  text-align: right;
+}
+
+/* Flexbox - CORE RTL FIX */
+html[dir="rtl"] .flex {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .flex-col {
+  flex-direction: column;
+}
+
+html[dir="rtl"] .flex-row {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .flex-row-reverse {
+  flex-direction: row;
+}
+
+html[dir="rtl"] .flex-row-reverse {
+  flex-direction: row;
+}
+
+/* Gap utilities - no change needed as gap works the same */
+html[dir="rtl"] .gap-1 {
+  gap: 0.25rem;
+}
+
+html[dir="rtl"] .gap-2 {
+  gap: 0.5rem;
+}
+
+html[dir="rtl"] .gap-3 {
+  gap: 0.75rem;
+}
+
+html[dir="rtl"] .gap-4 {
+  gap: 1rem;
+}
+
+html[dir="rtl"] .gap-5 {
+  gap: 1.25rem;
+}
+
+html[dir="rtl"] .gap-6 {
+  gap: 1.5rem;
+}
+
+/* Margin utilities - SWAP LEFT/RIGHT */
+html[dir="rtl"] .ml-1 {
+  margin-left: 0;
+  margin-right: 0.25rem;
+}
+
+html[dir="rtl"] .mr-1 {
+  margin-right: 0;
+  margin-left: 0.25rem;
+}
+
+html[dir="rtl"] .ml-2 {
+  margin-left: 0;
+  margin-right: 0.5rem;
+}
+
+html[dir="rtl"] .mr-2 {
+  margin-right: 0;
+  margin-left: 0.5rem;
+}
+
+html[dir="rtl"] .ml-3 {
+  margin-left: 0;
+  margin-right: 0.75rem;
+}
+
+html[dir="rtl"] .mr-3 {
+  margin-right: 0;
+  margin-left: 0.75rem;
+}
+
+html[dir="rtl"] .ml-4 {
+  margin-left: 0;
+  margin-right: 1rem;
+}
+
+html[dir="rtl"] .mr-4 {
+  margin-right: 0;
+  margin-left: 1rem;
+}
+
+html[dir="rtl"] .ml-5 {
+  margin-left: 0;
+  margin-right: 1.25rem;
+}
+
+html[dir="rtl"] .mr-5 {
+  margin-right: 0;
+  margin-left: 1.25rem;
+}
+
+html[dir="rtl"] .ml-6 {
+  margin-left: 0;
+  margin-right: 1.5rem;
+}
+
+html[dir="rtl"] .mr-6 {
+  margin-right: 0;
+  margin-left: 1.5rem;
+}
+
+html[dir="rtl"] .ml-auto {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+html[dir="rtl"] .mr-auto {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+/* Padding utilities - SWAP LEFT/RIGHT */
+html[dir="rtl"] .pl-2 {
+  padding-left: 0;
+  padding-right: 0.5rem;
+}
+
+html[dir="rtl"] .pr-2 {
+  padding-right: 0;
+  padding-left: 0.5rem;
+}
+
+html[dir="rtl"] .pl-3 {
+  padding-left: 0;
+  padding-right: 0.75rem;
+}
+
+html[dir="rtl"] .pr-3 {
+  padding-right: 0;
+  padding-left: 0.75rem;
+}
+
+html[dir="rtl"] .pl-4 {
+  padding-left: 0;
+  padding-right: 1rem;
+}
+
+html[dir="rtl"] .pr-4 {
+  padding-right: 0;
+  padding-left: 1rem;
+}
+
+html[dir="rtl"] .pl-5 {
+  padding-left: 0;
+  padding-right: 1.25rem;
+}
+
+html[dir="rtl"] .pr-5 {
+  padding-right: 0;
+  padding-left: 1.25rem;
+}
+
+html[dir="rtl"] .pl-6 {
+  padding-left: 0;
+  padding-right: 1.5rem;
+}
+
+html[dir="rtl"] .pr-6 {
+  padding-right: 0;
+  padding-left: 1.5rem;
+}
+
+/* Text alignment - SWAP LEFT/RIGHT */
+html[dir="rtl"] .text-left {
+  text-align: right;
+}
+
+html[dir="rtl"] .text-right {
+  text-align: left;
+}
+
+/* Positioning - SWAP LEFT/RIGHT */
+html[dir="rtl"] .left-0 {
+  left: auto;
+  right: 0;
+}
+
+html[dir="rtl"] .right-0 {
+  right: auto;
+  left: 0;
+}
+
+html[dir="rtl"] .left-1 {
+  left: auto;
+  right: 0.25rem;
+}
+
+html[dir="rtl"] .right-1 {
+  right: auto;
+  left: 0.25rem;
+}
+
+html[dir="rtl"] .left-2 {
+  left: auto;
+  right: 0.5rem;
+}
+
+html[dir="rtl"] .right-2 {
+  right: auto;
+  left: 0.5rem;
+}
+
+html[dir="rtl"] .left-3 {
+  left: auto;
+  right: 0.75rem;
+}
+
+html[dir="rtl"] .right-3 {
+  right: auto;
+  left: 0.75rem;
+}
+
+html[dir="rtl"] .left-4 {
+  left: auto;
+  right: 1rem;
+}
+
+html[dir="rtl"] .right-4 {
+  right: auto;
+  left: 1rem;
+}
+
+html[dir="rtl"] .left-full {
+  left: auto;
+  right: 100%;
+}
+
+html[dir="rtl"] .right-full {
+  right: auto;
+  left: 100%;
+}
+
+html[dir="rtl"] .-left-1 {
+  left: auto;
+  right: -0.25rem;
+}
+
+html[dir="rtl"] .-right-1 {
+  right: auto;
+  left: -0.25rem;
+}
+
+html[dir="rtl"] .-left-2 {
+  left: auto;
+  right: -0.5rem;
+}
+
+html[dir="rtl"] .-right-2 {
+  right: auto;
+  left: -0.5rem;
+}
+
+/* Dialog and Popover RTL */
+html[dir="rtl"] [role="dialog"],
+html[dir="rtl"] .dialog-content {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Table RTL */
+html[dir="rtl"] table {
+  direction: rtl;
+  text-align: right;
+}
+
+html[dir="rtl"] table th,
+html[dir="rtl"] table td {
+  text-align: right;
+}
+
+/* Grid RTL */
+html[dir="rtl"] [role="grid"] {
+  direction: rtl;
+}
+
+/* Listbox and Select RTL */
+html[dir="rtl"] [role="listbox"],
+html[dir="rtl"] [role="option"] {
+  direction: rtl;
+  text-align: right;
+}
+
+/* ========================== */
+/* RADIO & CHECKBOX RTL */
+/* ========================== */
+
+html[dir="rtl"] [role="radio"],
+html[dir="rtl"] [role="checkbox"] {
+  margin-right: 0.5rem;
+  margin-left: 0;
+}
+
+html[dir="rtl"] input[type="radio"],
+html[dir="rtl"] input[type="checkbox"] {
+  margin-right: 0.5rem;
+  margin-left: 0;
+}
+
+/* ========================== */
+/* BREADCRUMB RTL */
+/* ========================== */
+
+html[dir="rtl"] .flex.items-center.space-x-1 {
+  flex-direction: row-reverse;
+}
+
+/* ========================== */
+/* SIDEBAR SPECIFIC RTL FIXES */
+/* ========================== */
+
+/* Sidebar menu actions - swap right to left */
+html[dir="rtl"] [data-sidebar="menu-action"] {
+  right: auto !important;
+  left: 0.25rem !important;
+}
+
+/* Sidebar menu badges - swap right to left */
+html[dir="rtl"] [data-sidebar="menu-badge"] {
+  right: auto !important;
+  left: 0.25rem !important;
+}
+
+/* Sidebar group actions - swap right to left */
+html[dir="rtl"] [data-sidebar="group-action"] {
+  right: auto !important;
+  left: 0.75rem !important;
+}
+
+/* Sidebar rail - handle both sides */
+html[dir="rtl"] [data-sidebar="rail"] {
+  left: auto !important;
+  right: 0 !important;
+}
+
+/* Navigation menu RTL */
+html[dir="rtl"] [data-slot="navigation-menu"] {
+  flex-direction: row-reverse;
+}
+
+/* Button with icons - ensure proper spacing */
+html[dir="rtl"] button .mr-2,
+html[dir="rtl"] a .mr-2 {
+  margin-right: 0 !important;
+  margin-left: 0.5rem !important;
+}
+
+html[dir="rtl"] button .ml-2,
+html[dir="rtl"] a .ml-2 {
+  margin-left: 0 !important;
+  margin-right: 0.5rem !important;
+}
+
+/* Cards flex items */
+html[dir="rtl"] .flex.items-start.gap-3 {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .flex.items-center.gap-3 {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .flex.items-center.gap-2 {
+  flex-direction: row-reverse;
+}
+
+/* Dialog close button - swap right to left */
+html[dir="rtl"] [data-slot="dialog-close"],
+html[dir="rtl"] .absolute.top-4.right-4 {
+  right: auto !important;
+  left: 1rem !important;
+}
+
+/* Sheet close button - swap right to left */
+html[dir="rtl"] [data-slot="sheet-close"],
+html[dir="rtl"] [data-slot="sheet"] .absolute.top-4.right-4 {
+  right: auto !important;
+  left: 1rem !important;
+}
+
+/* Toast close button */
+html[dir="rtl"] [data-slot="toast-close"],
+html[dir="rtl"] .group .absolute.right-2.top-2 {
+  right: auto !important;
+  left: 0.5rem !important;
+}
+
+/* Select trigger icon */
+html[dir="rtl"] [data-slot="select-trigger"] .absolute.right-2,
+html[dir="rtl"] select ~ .absolute.right-2 {
+  right: auto !important;
+  left: 0.5rem !important;
+}
+
+/* Dropdown menu icons */
+html[dir="rtl"] [data-slot="dropdown-menu-checkbox-item"] .absolute.left-2,
+html[dir="rtl"] [data-slot="dropdown-menu-radio-item"] .absolute.left-2,
+html[dir="rtl"] [data-slot="context-menu-checkbox-item"] .absolute.left-2,
+html[dir="rtl"] [data-slot="context-menu-radio-item"] .absolute.left-2 {
+  left: auto !important;
+  right: 0.5rem !important;
+}
+
+/* Space utilities - no change needed (margin works same) */
+html[dir="rtl"] .space-x-1 > * + * {
+  margin-left: 0;
+  margin-right: 0.25rem;
+}
+
+html[dir="rtl"] .space-x-2 > * + * {
+  margin-left: 0;
+  margin-right: 0.5rem;
+}
+
+html[dir="rtl"] .space-x-3 > * + * {
+  margin-left: 0;
+  margin-right: 0.75rem;
+}
+
+html[dir="rtl"] .space-x-4 > * + * {
+  margin-left: 0;
+  margin-right: 1rem;
+}
+
+html[dir="rtl"] .space-y-1 > * + * {
+  margin-top: 0.25rem;
+}
+
+html[dir="rtl"] .space-y-2 > * + * {
+  margin-top: 0.5rem;
+}
+
+html[dir="rtl"] .space-y-3 > * + * {
+  margin-top: 0.75rem;
+}
+
+html[dir="rtl"] .space-y-4 > * + * {
+  margin-top: 1rem;
+}
+

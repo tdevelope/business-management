@@ -11,13 +11,13 @@ export default function UnauthorizedPage() {
           <CardHeader>
             <div className="flex items-center gap-3 mb-2">
               <AlertCircle className="h-8 w-8 text-destructive" />
-              <CardTitle className="text-2xl">Access Denied</CardTitle>
+              <CardTitle className="text-2xl">גישה נדחתה</CardTitle>
             </div>
-            <CardDescription>You don&apos;t have permission to access this page.</CardDescription>
+            <CardDescription>אין לך הרשאה לגשת לדף זה.</CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
-              <Link href="/">Go Home</Link>
+              <Link href="/">חזור לעמוד הבית</Link>
             </Button>
           </CardContent>
         </Card>

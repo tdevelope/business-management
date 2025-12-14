@@ -8,8 +8,8 @@ import { SessionProvider } from "@/components/SessionProvider"
 import { Navbar } from "@/components/Navbar"
 
 export const metadata: Metadata = {
-  title: "BookingPro - Business Management System",
-  description: "Professional appointment booking and business management",
+  title: "BookingPro - מערכת ניהול עסקים",
+  description: "מערכת הזמנות מקצועית לניהול עסקים",
   generator: "v0.app",
   icons: {
     icon: [
@@ -36,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="he" dir="rtl">
       <body className="font-sans antialiased">
         <QueryProvider>
           <SessionProvider>

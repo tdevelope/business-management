@@ -60,7 +60,7 @@ function UsersManagement() {
             setUsers(data);
             setFilteredUsers(data);
         } catch (err) {
-            setError('Failed to load users. Please try again.');
+            setError('תקלה בטעינת משתמשים. אנא נסה שוב.');
             console.error(err);
         } finally {
             setLoading(false);
@@ -114,15 +114,15 @@ function UsersManagement() {
         try {
             if (modalMode === 'create') {
                 await usersApi.create(formData);
-                showNotification('User created successfully');
+                showNotification('המשתמש נוצר בהצלחה');
             } else if (selectedUser) {
                 await usersApi.update(selectedUser.id, formData);
-                showNotification('User updated successfully');
+                showNotification('המשתמש עודכן בהצלחה');
             }
             closeModal();
             loadUsers();
         } catch (err) {
-            showNotification('Operation failed. Please try again.', 'error');
+            showNotification('הפעולה נכשלה. אנא נסה שוב.', 'error');
             console.error(err);
         }
     };
@@ -130,11 +130,11 @@ function UsersManagement() {
     const handleDelete = async (userId: string) => {
         try {
             await usersApi.delete(userId);
-            showNotification('User deleted successfully');
+            showNotification('המשתמש נמחק בהצלחה');
             setDeleteConfirm(null);
             loadUsers();
         } catch (err) {
-            showNotification('Failed to delete user.', 'error');
+            showNotification('תקלה במחיקת משתמש.', 'error');
             console.error(err);
         }
     };
@@ -154,8 +154,8 @@ function UsersManagement() {
                             <Users className="w-8 h-8 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900">Users Management</h1>
-                            <p className="text-gray-600 mt-1">Manage customer accounts and permissions</p>
+                            <h1 className="text-3xl font-bold text-gray-900">ניהול משתמשים</h1>
+                            <p className="text-gray-600 mt-1">נהל חשבונות לקוחות והרשאות</p>
                         </div>
                     </div>
                 </div>
@@ -171,23 +171,23 @@ function UsersManagement() {
 
                 {/* Controls */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-                    <div className="flex flex-col sm:flex-row gap-4 justify-between">
+                    <div className="flex flex-col sm:flex-row gap-4">
                         <div className="relative flex-1 max-w-md">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                             <input
                                 type="text"
-                                placeholder="Search by name, email, or phone..."
+                                placeholder="חפש לפי שם, דוא״ל או טלפון..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="w-full pr-10 pl-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-right"
                             />
                         </div>
                         <button
                             onClick={openCreateModal}
                             className="flex items-center gap-2 bg-black text-white px-6 py-2.5 rounded-lg hover:bg-gray-900 transition-colors font-medium"
                         >
+                            הוסף משתמש חדש
                             <UserPlus className="w-5 h-5" />
-                            Add New User
                         </button>
                     </div>
                 </div>
@@ -203,23 +203,23 @@ function UsersManagement() {
                             <AlertCircle className="w-12 h-12 mb-4" />
                             <p className="text-lg font-medium">{error}</p>
                             <button onClick={loadUsers} className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                                Retry
+                                נסה שוב
                             </button>
                         </div>
                     ) : filteredUsers.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-gray-500">
                             <Users className="w-12 h-12 mb-4" />
-                            <p className="text-lg font-medium">No users found</p>
-                            <p className="text-sm mt-1">Try adjusting your search or add a new user</p>
+                            <p className="text-lg font-medium">לא נמצאו משתמשים</p>
+                            <p className="text-sm mt-1">נסה להתאים את החיפוש או להוסיף משתמש חדש</p>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead className="bg-gray-50 border-b border-gray-200">
                                     <tr>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">User</th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Contact</th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Role</th>
+                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">משתמש</th>
+                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">יצירת קשר</th>
+                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">תפקיד</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
@@ -289,8 +289,8 @@ function UsersManagement() {
                 {/* Stats */}
                 <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                     <div className="text-sm text-gray-600">
-                        Showing <span className="font-semibold text-gray-900">{filteredUsers.length}</span> of{' '}
-                        <span className="font-semibold text-gray-900">{users.length}</span> users
+                        מציג <span className="font-semibold text-gray-900">{filteredUsers.length}</span> מתוך{' '}
+                        <span className="font-semibold text-gray-900">{users.length}</span> משתמשים
                     </div>
                 </div>
             </div>
@@ -300,18 +300,18 @@ function UsersManagement() {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-screen overflow-y-auto">
                         <div className="p-6 border-b border-gray-200">
-                            <div className="flex items-center justify-between">
-                                <h2 className="text-2xl font-bold text-gray-900">
-                                    {modalMode === 'create' ? 'Add New User' : 'Edit User'}
-                                </h2>
+                            <div className="flex items-center gap-4">
                                 <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 transition-colors">
                                     <X className="w-6 h-6" />
                                 </button>
+                                <h2 className="text-2xl font-bold text-gray-900">
+                                    {modalMode === 'create' ? 'הוסף משתמש חדש' : 'ערוך משתמש'}
+                                </h2>
                             </div>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-5">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">שם מלא</label>
                                 <input
                                     type="text"
                                     name="name"
@@ -319,11 +319,11 @@ function UsersManagement() {
                                     onChange={handleInputChange}
                                     required
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                                    placeholder="John Doe"
+                                    placeholder="יוחנן כהן"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">כתובת דוא״ל</label>
                                 <input
                                     type="email"
                                     name="email"
@@ -335,27 +335,27 @@ function UsersManagement() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">מספר טלפון</label>
                                 <input
                                     type="tel"
                                     name="phone"
                                     value={formData.phone}
                                     onChange={handleInputChange}
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                                    placeholder="+1 234 567 8900"
+                                    placeholder="+972 50 1234567"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">תפקיד</label>
                                 <select
                                     name="role"
                                     value={formData.role}
                                     onChange={handleInputChange}
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                                 >
-                                    <option value="customer">Customer</option>
-                                    <option value="admin">Admin</option>
-                                    <option value="manager">Manager</option>
+                                    <option value="customer">לקוח</option>
+                                    <option value="admin">מנהל</option>
+                                    <option value="manager">מנהל עסק</option>
                                 </select>
                             </div>
                             <div className="flex gap-3 pt-4">
@@ -364,13 +364,13 @@ function UsersManagement() {
                                     onClick={closeModal}
                                     className="flex-1 px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                                 >
-                                    Cancel
+                                    ביטול
                                 </button>
                                 <button
                                     type="submit"
                                     className="flex-1 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                                 >
-                                    {modalMode === 'create' ? 'Create User' : 'Save Changes'}
+                                    {modalMode === 'create' ? 'צור משתמש' : 'שמור שינויים'}
                                 </button>
                             </div>
                         </form>
@@ -387,25 +387,25 @@ function UsersManagement() {
                                 <AlertCircle className="w-6 h-6 text-red-600" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-gray-900">Confirm Deletion</h3>
-                                <p className="text-sm text-gray-600 mt-1">This action cannot be undone</p>
+                                <h3 className="text-lg font-bold text-gray-900">אישור מחיקה</h3>
+                                <p className="text-sm text-gray-600 mt-1">לא ניתן לבטל פעולה זו</p>
                             </div>
                         </div>
                         <p className="text-gray-700 mb-6">
-                            Are you sure you want to delete this user? All associated data will be permanently removed.
+                            האם אתה בטוח שברצונך למחוק משתמש זה? כל הנתונים הקשורים ימחקו לצמיתות.
                         </p>
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setDeleteConfirm(null)}
                                 className="flex-1 px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                             >
-                                Cancel
+                                ביטול
                             </button>
                             <button
                                 onClick={() => handleDelete(deleteConfirm)}
                                 className="flex-1 px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
                             >
-                                Delete User
+                                מחק משתמש
                             </button>
                         </div>
                     </div>

@@ -1,15 +1,77 @@
- services:
+services:
   db:
     image: postgres:15
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: business
-    ports:
-      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "admin", "-d", "business"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    networks:
+      - bm-network
 
   redis:
     image: redis:7
-    container_name: redis
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    networks:
+      - bm-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file: ./backend/.env
+    environment:
+      - DATABASE_URL=postgresql://admin:admin@db:5432/business
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=production
+    volumes:
+      - ./backend/certs:/certs:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
-      - "6379:6379"
+      - "3001:3000"
+    restart: unless-stopped
+    networks:
+      - bm-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    env_file: ./frontend/.env
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - bm-network
+
+volumes:
+  db_data:
+  redis_data:
+
+networks:
+  bm-network:
+    driver: bridge

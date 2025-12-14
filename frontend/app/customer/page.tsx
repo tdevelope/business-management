@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
 import { format } from "date-fns"
+import { he } from "date-fns/locale"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,7 +11,6 @@ import { appointmentsApi } from "@/api/appointments"
 import { Calendar, Clock, Plus } from "lucide-react"
 
 function CustomerHomeContent() {
-
   const { data: appointments, isLoading } = useQuery({
     queryKey: ["appointments"],
     queryFn: appointmentsApi.getMy,
@@ -26,8 +26,8 @@ function CustomerHomeContent() {
     <div className="container mx-auto px-4 py-12">
       <div className="max-w-4xl mx-auto space-y-8">
         <div>
-          <h1 className="text-4xl font-bold mb-2">Welcome Back!</h1>
-          <p className="text-muted-foreground">Manage your appointments and book new services</p>
+          <h1 className="text-4xl font-bold mb-2">ברוכים השבים!</h1>
+          <p className="text-muted-foreground">נהל את התורים שלך והזמן תורים חדשים</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
@@ -38,8 +38,8 @@ function CustomerHomeContent() {
                   <Plus className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <CardTitle>Book New Appointment</CardTitle>
-                  <CardDescription>Schedule a new service</CardDescription>
+                  <CardTitle>הזמן תור חדש</CardTitle>
+                  <CardDescription>תזמן שירות חדש</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -47,7 +47,7 @@ function CustomerHomeContent() {
               <Button asChild className="w-full" size="lg">
                 <Link href="/customer/book">
                   <Calendar className="mr-2 h-5 w-5" />
-                  Start Booking
+                  התחל הזמנה
                 </Link>
               </Button>
             </CardContent>
@@ -60,14 +60,14 @@ function CustomerHomeContent() {
                   <Calendar className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <CardTitle>My Appointments</CardTitle>
-                  <CardDescription>View all appointments</CardDescription>
+                  <CardTitle>התורים שלי</CardTitle>
+                  <CardDescription>הצג הכל</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <Button asChild variant="outline" className="w-full bg-transparent" size="lg">
-                <Link href="/customer/appointments">View All</Link>
+                <Link href="/customer/appointments">הצג הכל</Link>
               </Button>
             </CardContent>
           </Card>
@@ -75,38 +75,43 @@ function CustomerHomeContent() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Upcoming Appointments</CardTitle>
-            <CardDescription>Your next upcoming appointment</CardDescription>
+            <CardTitle>תורים קרובים</CardTitle>
+            <CardDescription>התור הבא שלך</CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <p className="text-muted-foreground">Loading...</p>
-            ) : upcoming && upcoming.length > 0 ? (
+            {isLoading && <p>טוען...</p>}
+            {!isLoading && (!upcoming || upcoming.length === 0) ? (
               <div className="space-y-3">
-                {(() => {
-                  const nextApt = upcoming[0]
-                  return (
-                    <div key={nextApt.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Clock className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">{nextApt.service?.name || "Service"}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {format(new Date(nextApt.startTime), "PPp")}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="px-2 py-1 rounded-full bg-green-100 text-green-800">{nextApt.status}</span>
-                    </div>
-                  )
-                })()}
+                <p className="text-sm text-muted-foreground">אין לך תורים קרובים</p>
+                <Button asChild>
+                  <Link href="/customer/book">הזמן עכשיו</Link>
+                </Button>
               </div>
             ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">No upcoming appointments</p>
-                <Button asChild>
-                  <Link href="/customer/book">Book Your First Appointment</Link>
-                </Button>
+              <div className="space-y-4">
+                {upcoming?.slice(0, 3).map((appointment) => (
+                  <div
+                    key={appointment.id}
+                    className="border rounded-lg p-4 space-y-2"
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                        {appointment.status === "scheduled" && "מתוזמן"}
+                        {appointment.status === "done" && "הושלם"}
+                        {appointment.status === "cancelled" && "בוטל"}
+                      </span>
+                      <div>
+                        <h4 className="font-semibold">
+                          {appointment.service?.name || "שירות"}
+                        </h4>
+                        <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                          <Calendar className="h-4 w-4" />
+                          {format(new Date(appointment.startTime), "PPP p", { locale: he })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>

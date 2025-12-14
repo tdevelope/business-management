@@ -21,13 +21,13 @@ type FormValues = {
 }
 
 const WEEK_DAYS = [
-    { value: 0, label: "Sunday" },
-    { value: 1, label: "Monday" },
-    { value: 2, label: "Tuesday" },
-    { value: 3, label: "Wednesday" },
-    { value: 4, label: "Thursday" },
-    { value: 5, label: "Friday" },
-    { value: 6, label: "Saturday" },
+    { value: 0, label: "ראשון" },
+    { value: 1, label: "שני" },
+    { value: 2, label: "שלישי" },
+    { value: 3, label: "רביעי" },
+    { value: 4, label: "חמישי" },
+    { value: 5, label: "שישי" },
+    { value: 6, label: "שבת" },
 ]
 
 function BusinessSettingsContent() {
@@ -87,14 +87,14 @@ function BusinessSettingsContent() {
         onSuccess: (updated) => {
             queryClient.setQueryData(["business-settings"], updated)
             toast({
-                title: "Settings saved",
-                description: "Business settings were updated successfully.",
+                title: "ההגדרות נשמרו",
+                description: "הגדרות העסק עודכנו בהצלחה.",
             })
         },
         onError: () => {
             toast({
-                title: "Save failed",
-                description: "Could not update business settings. Please try again.",
+                title: "כישלון בשמירה",
+                description: "לא ניתן לעדכן את הגדרות העסק. אנא נסה שוב.",
                 variant: "destructive",
             })
         },
@@ -105,34 +105,34 @@ function BusinessSettingsContent() {
     }
 
     if (isLoading && !data) {
-        return <div className="container mx-auto px-4 py-12">Loading...</div>
+        return <div className="container mx-auto px-4 py-12">טוען...</div>
     }
 
     return (
         <div className="container mx-auto px-4 py-12">
             <div className="max-w-3xl mx-auto space-y-8">
                 <div>
-                    <h1 className="text-3xl font-bold mb-2">Business Settings</h1>
+                    <h1 className="text-3xl font-bold mb-2">הגדרות עסק</h1>
                     <p className="text-muted-foreground">
-                        Configure opening days, opening hours and booking limits.
+                        הגדר ימי פתיחה, שעות פתיחה ומגבלות הזמנה.
                     </p>
                 </div>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>General Settings</CardTitle>
-                        <CardDescription>These rules affect all appointment logic.</CardDescription>
+                        <CardTitle>הגדרות כללי</CardTitle>
+                        <CardDescription>כללים אלה משפיעים על כל לוגיקת התורים.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="flex justify-start mb-4 mt-1">
                             <Dialog>
                                 <DialogTrigger asChild>
-                                    <Button variant="outline">Manage Blocked Times</Button>
+                                    <Button variant="outline">ניהול זמנים חסומים</Button>
                                 </DialogTrigger>
 
                                 <DialogContent className="max-w-2xl">
                                     <DialogHeader>
-                                        <DialogTitle>Blocked Times</DialogTitle>
+                                        <DialogTitle>זמנים חסומים</DialogTitle>
                                     </DialogHeader>
                                     <BlockedTimesManager />
                                 </DialogContent>
@@ -142,7 +142,7 @@ function BusinessSettingsContent() {
                         <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
                             {/* Working days */}
                             <div className="space-y-2">
-                                <Label>Working days</Label>
+                                <Label>ימי עבודה</Label>
                                 <div className="flex flex-wrap gap-2">
                                     {WEEK_DAYS.map((day) => {
                                         const isSelected = selectedDays.includes(day.value)
@@ -164,18 +164,18 @@ function BusinessSettingsContent() {
                             {/* Opening hours */}
                             <div className="grid md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="openTime">Opening time</Label>
+                                    <Label htmlFor="openTime">שעת פתיחה</Label>
                                     <Input id="openTime" type="time" {...register("openTime")} />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="closeTime">Closing time</Label>
+                                    <Label htmlFor="closeTime">שעת סגירה</Label>
                                     <Input id="closeTime" type="time" {...register("closeTime")} />
                                 </div>
                             </div>
 
                             {/* Max advance booking */}
                             <div className="space-y-2">
-                                <Label htmlFor="maxAdvanceBookingDays">Max days in advance</Label>
+                                <Label htmlFor="maxAdvanceBookingDays">מספר ימים מראש</Label>
                                 <Input
                                     id="maxAdvanceBookingDays"
                                     type="number"
@@ -196,13 +196,13 @@ function BusinessSettingsContent() {
                                         maxAdvanceBookingDays: data.maxAdvanceBookingDays,
                                     })}
                                 >
-                                    Reset
+                                    אפס
                                 </Button>
                                 <Button
                                     type="submit"
                                     disabled={mutation.isPending || !formState.isDirty}
                                 >
-                                    {mutation.isPending ? "Saving..." : "Save changes"}
+                                    {mutation.isPending ? "שמירה..." : "שמור שינויים"}
                                 </Button>
                             </div>
                         </form>

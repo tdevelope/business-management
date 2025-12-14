@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,21 +11,21 @@ export default function HomePage() {
       <div className="max-w-4xl mx-auto">
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold mb-4 text-balance">Streamline Your Business Appointments</h1>
+          <h1 className="text-5xl font-bold mb-4 text-balance">יעל את התורים העסקיים שלך</h1>
           <p className="text-xl text-muted-foreground mb-8 text-pretty">
-            Professional appointment booking system with smart scheduling, calendar management, and automated reminders.
+            מערכת הזמנות מקצועית עם תזמון חכם, ניהול לוח שנה ותזכורות אוטומטיות.
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
             <Button asChild size="lg">
               <Link href="/customer">
                 <Calendar className="mr-2 h-5 w-5" />
-                Book an Appointment
+                הזמן תור
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline">
               <Link href="/admin">
                 <Users className="mr-2 h-5 w-5" />
-                Admin Dashboard
+                לוח בקרה
               </Link>
             </Button>
           </div>
@@ -37,12 +39,12 @@ export default function HomePage() {
                 <div className="p-2 bg-primary/10 rounded-lg">
                   <Zap className="h-6 w-6 text-primary" />
                 </div>
-                <CardTitle>Smart Scheduling</CardTitle>
+                <CardTitle>תזמון חכם</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
               <CardDescription>
-                AI-powered appointment suggestions based on your preferences and availability patterns.
+                הצעות היעול על סמך העדפות והדפוסים של זמינות שלך.
               </CardDescription>
             </CardContent>
           </Card>
@@ -53,12 +55,12 @@ export default function HomePage() {
                 <div className="p-2 bg-primary/10 rounded-lg">
                   <Calendar className="h-6 w-6 text-primary" />
                 </div>
-                <CardTitle>Calendar Management</CardTitle>
+                <CardTitle>ניהול יומן</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Comprehensive calendar view with drag-and-drop scheduling and real-time updates.
+                תצוגת לוח שנה כוללת עם תזמון גרירה-והנחה ועדכונים בזמן אמת.
               </CardDescription>
             </CardContent>
           </Card>
@@ -69,12 +71,12 @@ export default function HomePage() {
                 <div className="p-2 bg-primary/10 rounded-lg">
                   <Clock className="h-6 w-6 text-primary" />
                 </div>
-                <CardTitle>Time Optimization</CardTitle>
+                <CardTitle>אופטימיזציית זמן</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Minimize gaps and maximize productivity with intelligent appointment placement.
+                צמצום פערים והגברת פרודוקטיביות עם הצבת תורים חכמה.
               </CardDescription>
             </CardContent>
           </Card>
@@ -85,12 +87,12 @@ export default function HomePage() {
                 <div className="p-2 bg-primary/10 rounded-lg">
                   <Users className="h-6 w-6 text-primary" />
                 </div>
-                <CardTitle>Client Management</CardTitle>
+                <CardTitle>ניהול לקוחות</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Track customer history, preferences, and appointment records in one place.
+                עקוב אחר היסטוריית לקוחות, העדפות והתורים שלהם במקום אחד.
               </CardDescription>
             </CardContent>
           </Card>
@@ -99,14 +101,14 @@ export default function HomePage() {
         {/* CTA Section */}
         <Card className="bg-primary text-primary-foreground">
           <CardHeader>
-            <CardTitle className="text-2xl">Ready to get started?</CardTitle>
+            <CardTitle className="text-2xl">מוכן להתחיל?</CardTitle>
             <CardDescription className="text-primary-foreground/80">
-              Choose your path below to access the platform
+              בחר בנתיב שלך בהמשך לגישה לפלטפורמה
             </CardDescription>
           </CardHeader>
           <CardContent className="flex gap-4">
             <Button asChild variant="secondary" size="lg">
-              <Link href="/register">Create Account</Link>
+              <Link href="/register">צור חשבון</Link>
             </Button>
             <Button
               asChild
@@ -114,7 +116,7 @@ export default function HomePage() {
               size="lg"
               className="text-primary border-primary-foreground hover:bg-primary-foreground/10 bg-transparent"
             >
-              <Link href="/login">Sign In</Link>
+              <Link href="/login">כניסה</Link>
             </Button>
           </CardContent>
         </Card>

@@ -36,8 +36,8 @@ export default function LoginPage() {
 
   const handleGoogleLogin = () => {
     toast({
-      title: "Coming Soon",
-      description: "Google login is not configured yet.",
+      title: "עדיין לא זמין",
+      description: "כניסה ב-Google לא מוגדרת עדיין.",
     })
   }
 
@@ -45,35 +45,36 @@ export default function LoginPage() {
     <div className="container mx-auto px-4 py-12">
       <div className="max-w-md mx-auto">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Welcome Back</CardTitle>
-            <CardDescription>Sign in to your account to continue</CardDescription>
+          <CardHeader className="text-right">
+            <CardTitle className="text-2xl">כניסה לחשבון</CardTitle>
+            <CardDescription>התחבר לחשבונך כדי להמשיך</CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+              <div className="space-y-2 text-right">
+                <Label htmlFor="email">דוא״ל</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className="text-right"
                   required
                 />
               </div>
-              <div className="relative">
-                <Label htmlFor="password">Password</Label>
+              <div className="relative text-right">
+                <Label htmlFor="password">סיסמה</Label>
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pr-10"
+                  className="pl-10 text-right"
                   required          
                 />
-                <div className="absolute inset-y-0 right-2 flex items-center">
+                <div className="absolute inset-y-0 left-2 flex items-center">
                   <button
                     type="button"
                     className="relative top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center p-0 text-gray-500 hover:text-gray-700"
@@ -87,7 +88,7 @@ export default function LoginPage() {
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign In"}
+                {isLoading ? "מתחבר..." : "כניסה"}
               </Button>
               <Button type="button" variant="outline" className="w-full bg-transparent" onClick={handleGoogleLogin}>
                 <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -108,12 +109,12 @@ export default function LoginPage() {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                Login with Google
+                כניסה ב-Google
               </Button>
               <p className="text-sm text-muted-foreground text-center">
-                Don&apos;t have an account?{" "}
+                אין לך חשבון?{" "}
                 <Link href="/register" className="text-primary hover:underline">
-                  Register
+                  הרשמה
                 </Link>
               </p>
             </CardFooter>
