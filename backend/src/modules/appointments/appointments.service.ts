@@ -321,19 +321,22 @@ export class AppointmentsService {
     if (!suggestions.length) throw new BadRequestException("No available suggestions");
     if (!dto.startTime) throw new BadRequestException("You must send the chosen startTime from suggestions");
 
-    const chosenTime = dto.startTime instanceof Date ? dto.startTime.getTime() : new Date(dto.startTime).getTime();
-    if (isNaN(chosenTime)) throw new BadRequestException("Invalid chosen startTime");
+    const chosenTimeStr = dto.startTime instanceof Date ? dto.startTime.toISOString() : dto.startTime;
+    if (!chosenTimeStr) throw new BadRequestException("Invalid chosen startTime");
 
-    const chosen = suggestions.find(s => s.start.getTime() === chosenTime);
+    const chosen = suggestions.find(s => s.start === chosenTimeStr);
     if (!chosen) throw new BadRequestException("Invalid suggestion selected");
 
     const oldStart = new Date(appointment.startTime);
 
+    const chosenStartDate = new Date(chosen.start);
+    const chosenEndDate = new Date(chosen.end);
+
     const updated = await this.prisma.appointment.update({
       where: { id: appointment.id },
       data: {
-        startTime: chosen.start,
-        endTime: chosen.end,
+        startTime: chosenStartDate,
+        endTime: chosenEndDate,
         date: new Date(dto.date),
         status: dto.status || appointment.status
       },
@@ -458,27 +461,16 @@ export class AppointmentsService {
     const { hh, mm } = this.validateTimeString(preferredTime);
 
     const { y, m, d } = this.parseDateParts(date);
+    // Create date objects treating the input as local time
     const preferredDateTime = new Date(y, m - 1, d, hh, mm);
+    const preferredDateOnly = new Date(y, m - 1, d, 0, 0, 0);
 
     const now = new Date();
     
-    // Check if the preferred date is today and the time has already passed
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const preferredDate = new Date(y, m - 1, d);
-    preferredDate.setHours(0, 0, 0, 0);
-    
-    if (preferredDate.getTime() === today.getTime()) {
-      // It's today, so we need to check if the preferred time has already passed
-      if (preferredDateTime < now) {
-        throw new BadRequestException(
-          "Cannot generate suggestions for a past time"
-        );
-      }
-    } else if (preferredDate < today) {
+    // Check if the preferred time is in the past
+    if (preferredDateTime < now) {
       throw new BadRequestException(
-        "Cannot generate suggestions for a past date"
+        "Cannot generate suggestions for a past time"
       );
     }
 
@@ -591,7 +583,12 @@ export class AppointmentsService {
         Math.abs(b.start.getTime() - preferredDateTime.getTime())
     );
 
-    return inRangeSuggestions.slice(0, 3);
+    // Return suggestions as ISO strings that preserve the intended time
+    // We use toISOString() which properly converts local time to UTC representation
+    return inRangeSuggestions.slice(0, 3).map(s => ({
+      start: s.start.toISOString(),
+      end: s.end.toISOString()
+    }));
   }
 
   private async getBusinessSettings() {

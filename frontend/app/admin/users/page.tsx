@@ -1,15 +1,43 @@
 "use client";
 
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import { Users, UserPlus, Edit2, Trash2, Search, Mail, Phone, Shield, X, Check, AlertCircle } from 'lucide-react';
+import { Users, UserPlus, Edit2, Trash2, Search, Mail, Phone, Shield, Check, AlertCircle } from 'lucide-react';
 import { usersApi } from '@/src/api/users';
 import { User } from '@/src/types';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface FormData {
     firstName: string;
     lastName: string;
     email: string;
     phone: string;
+    password?: string;
     role: 'customer' | 'admin' | 'manager';
 }
 
@@ -35,6 +63,7 @@ function UsersManagement() {
         lastName: '',
         email: '',
         phone: '',
+        password: '',
         role: 'customer'
     });
 
@@ -79,6 +108,7 @@ function UsersManagement() {
             lastName: '',
             email: '',
             phone: '',
+            password: '',
             role: 'customer',
         });
         setShowModal(true);
@@ -105,6 +135,7 @@ function UsersManagement() {
             lastName: '',
             email: '',
             phone: '',
+            password: '',
             role: 'customer'
         });
     };
@@ -296,133 +327,124 @@ function UsersManagement() {
             </div>
 
             {/* Create/Edit Modal */}
-            {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-screen overflow-y-auto">
-                        <div className="p-6 border-b border-gray-200">
-                            <div className="flex items-center gap-4">
-                                <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 transition-colors">
-                                    <X className="w-6 h-6" />
-                                </button>
-                                <h2 className="text-2xl font-bold text-gray-900">
-                                    {modalMode === 'create' ? 'הוסף משתמש חדש' : 'ערוך משתמש'}
-                                </h2>
-                            </div>
+            <Dialog open={showModal} onOpenChange={setShowModal}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {modalMode === 'create' ? 'הוסף משתמש חדש' : 'ערוך משתמש'}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {modalMode === 'create' 
+                                ? 'הזן את פרטי המשתמש החדש' 
+                                : 'עדכן את פרטי המשתמש'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="firstName">שם פרטי</Label>
+                            <Input
+                                id="firstName"
+                                type="text"
+                                name="firstName"
+                                value={formData.firstName}
+                                onChange={handleInputChange}
+                                required
+                                placeholder="יוחנן"
+                            />
                         </div>
-                        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">שם פרטי</label>
-                                <input
-                                    type="text"
-                                    name="firstName"
-                                    value={formData.firstName}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                                    placeholder="יוחנן"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">שם משפחה</label>
-                                <input
-                                    type="text"
-                                    name="lastName"
-                                    value={formData.lastName}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                                    placeholder="כהן"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">כתובת דוא״ל</label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                                    placeholder="john@example.com"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">מספר טלפון</label>
-                                <input
-                                    type="tel"
-                                    name="phone"
-                                    value={formData.phone}
-                                    onChange={handleInputChange}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                                    placeholder="+972 50 1234567"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">תפקיד</label>
-                                <select
-                                    name="role"
-                                    value={formData.role}
-                                    onChange={handleInputChange}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                                >
-                                    <option value="customer">לקוח</option>
-                                    <option value="admin">מנהל</option>
-                                    <option value="manager">מנהל עסק</option>
-                                </select>
-                            </div>
-                            <div className="flex gap-3 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={closeModal}
-                                    className="flex-1 px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-                                >
-                                    ביטול
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                                >
-                                    {modalMode === 'create' ? 'צור משתמש' : 'שמור שינויים'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Delete Confirmation Modal */}
-            {deleteConfirm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                                <AlertCircle className="w-6 h-6 text-red-600" />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-bold text-gray-900">אישור מחיקה</h3>
-                                <p className="text-sm text-gray-600 mt-1">לא ניתן לבטל פעולה זו</p>
-                            </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="lastName">שם משפחה</Label>
+                            <Input
+                                id="lastName"
+                                type="text"
+                                name="lastName"
+                                value={formData.lastName}
+                                onChange={handleInputChange}
+                                required
+                                placeholder="כהן"
+                            />
                         </div>
-                        <p className="text-gray-700 mb-6">
-                            האם אתה בטוח שברצונך למחוק משתמש זה? כל הנתונים הקשורים ימחקו לצמיתות.
-                        </p>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setDeleteConfirm(null)}
-                                className="flex-1 px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-                            >
+                        <div className="space-y-2">
+                            <Label htmlFor="email">כתובת דוא״ל</Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleInputChange}
+                                required
+                                placeholder="john@example.com"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="phone">מספר טלפון</Label>
+                            <Input
+                                id="phone"
+                                type="tel"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleInputChange}
+                                placeholder="+972 50 1234567"
+                            />
+                        </div>
+                        {modalMode === 'create' && (
+                            <div className="space-y-2">
+                                <Label htmlFor="password">סיסמה</Label>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    name="password"
+                                    value={formData.password || ''}
+                                    onChange={handleInputChange}
+                                    required={modalMode === 'create'}
+                                    placeholder="לפחות 8 תווים, אות גדולה, אות קטנה ומספר"
+                                />
+                                <p className="text-xs text-gray-500">לפחות 8 תווים, אות גדולה אחת, אות קטנה אחת ומספר אחד</p>
+                            </div>
+                        )}
+                        <div className="space-y-2">
+                            <Label htmlFor="role">תפקיד</Label>
+                            <Select name="role" value={formData.role} onValueChange={(value) => setFormData(prev => ({ ...prev, role: value as any }))}>
+                                <SelectTrigger id="role">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="customer">לקוח</SelectItem>
+                                    <SelectItem value="admin">מנהל</SelectItem>
+                                    <SelectItem value="manager">מנהל עסק</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <DialogFooter className="mt-6">
+                            <Button type="button" variant="outline" onClick={() => setShowModal(false)}>
                                 ביטול
-                            </button>
-                            <button
-                                onClick={() => handleDelete(deleteConfirm)}
-                                className="flex-1 px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-                            >
-                                מחק משתמש
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                            </Button>
+                            <Button type="submit">
+                                {modalMode === 'create' ? 'צור משתמש' : 'שמור שינויים'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation */}
+            <AlertDialog open={deleteConfirm !== null} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>אישור מחיקה</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            האם אתה בטוח שברצונך למחוק משתמש זה? כל הנתונים הקשורים ימחקו לצמיתות.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogCancel>ביטול</AlertDialogCancel>
+                    <AlertDialogAction
+                        onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
+                        className="bg-red-600 hover:bg-red-700"
+                    >
+                        מחק משתמש
+                    </AlertDialogAction>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
