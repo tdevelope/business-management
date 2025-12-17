@@ -1,6 +1,10 @@
 import httpClient from "./httpClient"
 import type { User } from "@/types"
 
+interface CreateUserData extends Partial<User> {
+  password?: string
+}
+
 export const usersApi = {
   getAllCustomers: async (): Promise<User[]> => {
     const response = await httpClient.get<User[]>("/users?role=customer")
@@ -12,7 +16,7 @@ export const usersApi = {
     return response.data
   },
 
-  create: async (data: Partial<User>): Promise<User> => {
+  create: async (data: CreateUserData): Promise<User> => {
     const response = await httpClient.post<User>("/users", data)
     return response.data
   },

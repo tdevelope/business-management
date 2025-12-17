@@ -116,10 +116,8 @@ function BookingWizardContent() {
   const handleConfirm = () => {
     if (selectedService && selectedSlot) {
       const date = selectedSlot.start.split("T")[0]
-      const slotDate = new Date(selectedSlot.start)
-      const hh = slotDate.getHours().toString().padStart(2, "0")
-      const mm = slotDate.getMinutes().toString().padStart(2, "0")
-      const startTime = `${hh}:${mm}`
+      // Use the ISO string directly without timezone conversion
+      const startTime = selectedSlot.start.split("T")[1].substring(0, 5)
 
       createAppointmentMutation.mutate({
         serviceId: Number(selectedService.id),
