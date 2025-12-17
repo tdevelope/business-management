@@ -461,14 +461,29 @@ export class AppointmentsService {
     const preferredDateTime = new Date(y, m - 1, d, hh, mm);
 
     const now = new Date();
-    const diffDays =
-      (preferredDateTime.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-
-    if (preferredDateTime < now) {
+    
+    // Check if the preferred date is today and the time has already passed
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const preferredDate = new Date(y, m - 1, d);
+    preferredDate.setHours(0, 0, 0, 0);
+    
+    if (preferredDate.getTime() === today.getTime()) {
+      // It's today, so we need to check if the preferred time has already passed
+      if (preferredDateTime < now) {
+        throw new BadRequestException(
+          "Cannot generate suggestions for a past time"
+        );
+      }
+    } else if (preferredDate < today) {
       throw new BadRequestException(
         "Cannot generate suggestions for a past date"
       );
     }
+
+    const diffDays =
+      (preferredDateTime.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
 
     const settings = await this.getBusinessSettings();
 
@@ -549,8 +564,9 @@ export class AppointmentsService {
       return [];
     }
 
+    // Filter out suggestions that are in the past and ensure we're checking against current time correctly
     const futureSuggestions = possibleSuggestions.filter(
-      (s) => s.start >= now
+      (s) => s.start.getTime() > now.getTime()
     );
 
     if (futureSuggestions.length === 0) {
