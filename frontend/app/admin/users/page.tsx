@@ -311,15 +311,27 @@ function UsersManagement() {
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-5">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">שם מלא</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">שם פרטי</label>
                                 <input
                                     type="text"
-                                    name="name"
-                                    value={formData.firstName + ' ' + formData.lastName}
+                                    name="firstName"
+                                    value={formData.firstName}
                                     onChange={handleInputChange}
                                     required
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                                    placeholder="יוחנן כהן"
+                                    placeholder="יוחנן"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">שם משפחה</label>
+                                <input
+                                    type="text"
+                                    name="lastName"
+                                    value={formData.lastName}
+                                    onChange={handleInputChange}
+                                    required
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                    placeholder="כהן"
                                 />
                             </div>
                             <div>
