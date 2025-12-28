@@ -1,17 +1,21 @@
-import Resend from 'resend';
+import { Resend } from 'resend';
 import { Injectable, Logger } from '@nestjs/common';
 import * as path from 'path';
 import * as fs from 'fs';
 
 @Injectable()
 export class NotificationsService {
-  private resend: any;
+  private resend: Resend;
   private logger = new Logger(NotificationsService.name);
   private fromEmail = process.env.RESEND_FROM_EMAIL;
   private fromName = process.env.RESEND_FROM_NAME;
 
   constructor() {
-    this.resend = Resend;
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      this.logger.warn('RESEND_API_KEY environment variable not set');
+    }
+    this.resend = new Resend(apiKey);
   }
 
   private async sendEmail(

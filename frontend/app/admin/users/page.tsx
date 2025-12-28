@@ -298,14 +298,14 @@ function UsersManagement() {
                                                     <button
                                                         onClick={() => openEditModal(user)}
                                                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                        title="Edit user"
+                                                        title="עריכת משתמש"
                                                     >
                                                         <Edit2 className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => setDeleteConfirm(user.id)}
                                                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                        title="Delete user"
+                                                        title="מחיקת משתמש"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>

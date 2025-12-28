@@ -359,13 +359,13 @@ function AppointmentsCalendarContent() {
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <h3 className="font-semibold text-lg">{apt.service?.name || "Service"}</h3>
+                            <h3 className="font-semibold text-lg">{apt.service?.name || "שירות"}</h3>
                             <p className="text-sm text-muted-foreground">
                               {format(new Date(apt.startTime), "PPp")} - {format(new Date(apt.endTime), "p")}
                             </p>
                             {apt.user && (
                               <p className="text-sm text-muted-foreground mt-1">
-                                Client: {apt.user.firstName} {apt.user.lastName}
+                                לקוח: {apt.user.firstName} {apt.user.lastName}
                               </p>
                             )}
                           </div>
@@ -424,7 +424,7 @@ function AppointmentsCalendarContent() {
                             onClick={() => handleOpenDialog(apt)}
                           >
                             <span className="block font-medium">
-                              {format(new Date(apt.startTime), "p")} – {apt.service?.name || "Service"}
+                              {format(new Date(apt.startTime), "p")} – {apt.service?.name || "שירות"}
                             </span>
                             {apt.user && (
                               <span className="block text-[10px] text-muted-foreground">
@@ -467,15 +467,15 @@ function AppointmentsCalendarContent() {
 
       {/* Dialog for Appointment Details/Edit/Create */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="dir-rtl">
           <DialogHeader>
-            <DialogTitle>{selectedAppointment ? (isEditing ? "Edit Appointment" : "Appointment Details") : "Create Appointment"}</DialogTitle>
+            <DialogTitle>{selectedAppointment ? (isEditing ? "עריכת התור" : "פרטי התור") : "יצירת תור"}</DialogTitle>
             <DialogDescription>
               {selectedAppointment
                 ? isEditing
-                  ? "Edit the appointment details"
-                  : "View and manage this appointment"
-                : "Schedule a new appointment manually"}
+                  ? "עדכן את פרטי התור"
+                  : "צפה בתור וניהול שלו"
+                : "תזמן תור חדש ידנית"}
             </DialogDescription>
           </DialogHeader>
 
@@ -483,14 +483,14 @@ function AppointmentsCalendarContent() {
             isEditing ? (
               <form onSubmit={handleEditSubmit} className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="service">Service</Label>
+                  <Label htmlFor="service">שירות</Label>
                   <Select
                     value={String(formData.serviceId)}
                     onValueChange={(value) => setFormData({ ...formData, serviceId: Number(value) })}
                     required
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a service" />
+                      <SelectValue placeholder="בחר שירות" />
                     </SelectTrigger>
                     <SelectContent>
                       {services?.map((service) => (
