@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import { Users, UserPlus, Edit2, Trash2, Search, Mail, Phone, Shield, Check, AlertCircle } from 'lucide-react';
+import { Users, UserPlus, Edit2, Trash2, Search, Mail, Phone, Shield, Check, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { usersApi } from '@/src/api/users';
 import { User } from '@/src/types';
 import {
@@ -57,6 +57,7 @@ function UsersManagement() {
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
     const [notification, setNotification] = useState<Notification | null>(null);
+    const [showPassword, setShowPassword] = useState(false);
 
     const [formData, setFormData] = useState<FormData>({
         firstName: '',
@@ -129,6 +130,7 @@ function UsersManagement() {
 
     const closeModal = () => {
         setShowModal(false);
+        setShowPassword(false);
         setSelectedUser(null);
         setFormData({
             firstName: '',
@@ -328,7 +330,7 @@ function UsersManagement() {
 
             {/* Create/Edit Modal */}
             <Dialog open={showModal} onOpenChange={setShowModal}>
-                <DialogContent className="max-w-md">
+                <DialogContent className="w-full max-w-xl sm:max-w-2xl px-4 sm:px-6">
                     <DialogHeader>
                         <DialogTitle>
                             {modalMode === 'create' ? 'הוסף משתמש חדש' : 'ערוך משתמש'}
@@ -339,30 +341,32 @@ function UsersManagement() {
                                 : 'עדכן את פרטי המשתמש'}
                         </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="firstName">שם פרטי</Label>
-                            <Input
-                                id="firstName"
-                                type="text"
-                                name="firstName"
-                                value={formData.firstName}
-                                onChange={handleInputChange}
-                                required
-                                placeholder="יוחנן"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="lastName">שם משפחה</Label>
-                            <Input
-                                id="lastName"
-                                type="text"
-                                name="lastName"
-                                value={formData.lastName}
-                                onChange={handleInputChange}
-                                required
-                                placeholder="כהן"
-                            />
+                    <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="firstName">שם פרטי</Label>
+                                <Input
+                                    id="firstName"
+                                    type="text"
+                                    name="firstName"
+                                    value={formData.firstName}
+                                    onChange={handleInputChange}
+                                    required
+                                    placeholder="יוחנן"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="lastName">שם משפחה</Label>
+                                <Input
+                                    id="lastName"
+                                    type="text"
+                                    name="lastName"
+                                    value={formData.lastName}
+                                    onChange={handleInputChange}
+                                    required
+                                    placeholder="כהן"
+                                />
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="email">כתובת דוא״ל</Label>
@@ -390,15 +394,25 @@ function UsersManagement() {
                         {modalMode === 'create' && (
                             <div className="space-y-2">
                                 <Label htmlFor="password">סיסמה</Label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    name="password"
-                                    value={formData.password || ''}
-                                    onChange={handleInputChange}
-                                    required={modalMode === 'create'}
-                                    placeholder="לפחות 8 תווים, אות גדולה, אות קטנה ומספר"
-                                />
+                                <div className="relative">
+                                    <Input
+                                        id="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        name="password"
+                                        value={formData.password || ''}
+                                        onChange={handleInputChange}
+                                        required={modalMode === 'create'}
+                                        placeholder="לפחות 8 תווים, אות גדולה, אות קטנה ומספר"
+                                        className="pr-10"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                                    >
+                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                </div>
                                 <p className="text-xs text-gray-500">לפחות 8 תווים, אות גדולה אחת, אות קטנה אחת ומספר אחד</p>
                             </div>
                         )}

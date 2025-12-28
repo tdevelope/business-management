@@ -20,12 +20,10 @@ export class AppointmentsController {
     }
 
     @UseGuards(JwtAuthGuard)
-    @Get()
-    async getAllAppointments(@Req() req) {
-        if (req.user.role !== 'admin') {
-            throw new ForbiddenException('Access denied');
-        }
-        return this.appointmentsService.getAllAppointments();
+    @Get('my')
+    async getMyAppointments(@Req() req) {
+        const userId = req.user.id;
+        return this.appointmentsService.getMyAppointments(userId);
     }
 
     @UseGuards(JwtAuthGuard)
@@ -38,10 +36,12 @@ export class AppointmentsController {
     }
 
     @UseGuards(JwtAuthGuard)
-    @Get('my')
-    async getMyAppointments(@Req() req) {
-        const userId = req.user.id;
-        return this.appointmentsService.getMyAppointments(userId);
+    @Get()
+    async getAllAppointments(@Req() req) {
+        if (req.user.role !== 'admin') {
+            throw new ForbiddenException('Access denied');
+        }
+        return this.appointmentsService.getAllAppointments();
     }
 
     @UseGuards(JwtAuthGuard)

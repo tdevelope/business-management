@@ -243,6 +243,9 @@ export class AppointmentsService {
           date: new Date(dateStr),
           status: dto.status || appointment.status
         },
+        include: {
+          service: true,
+        },
       });
 
       const appointmentUser = await this.userService.getMe(updated.userId);
@@ -339,6 +342,9 @@ export class AppointmentsService {
         endTime: chosenEndDate,
         date: new Date(dto.date),
         status: dto.status || appointment.status
+      },
+      include: {
+        service: true,
       },
     });
 
@@ -558,7 +564,7 @@ export class AppointmentsService {
 
     // Filter out suggestions that are in the past and ensure we're checking against current time correctly
     const futureSuggestions = possibleSuggestions.filter(
-      (s) => s.start.getTime() > now.getTime()
+      (s) => s.start.getTime() > now.getTime() && s.start >= openDate && s.end <= closeDate
     );
 
     if (futureSuggestions.length === 0) {
@@ -583,12 +589,29 @@ export class AppointmentsService {
         Math.abs(b.start.getTime() - preferredDateTime.getTime())
     );
 
-    // Return suggestions as ISO strings that preserve the intended time
-    // We use toISOString() which properly converts local time to UTC representation
-    return inRangeSuggestions.slice(0, 3).map(s => ({
-      start: s.start.toISOString(),
-      end: s.end.toISOString()
-    }));
+    // Return suggestions as ISO-like strings without UTC conversion
+    // We format as YYYY-MM-DDTHH:mm:ss to preserve local time
+    return inRangeSuggestions.slice(0, 3).map(s => {
+      const year = s.start.getFullYear();
+      const month = String(s.start.getMonth() + 1).padStart(2, '0');
+      const day = String(s.start.getDate()).padStart(2, '0');
+      const hours = String(s.start.getHours()).padStart(2, '0');
+      const minutes = String(s.start.getMinutes()).padStart(2, '0');
+      const seconds = String(s.start.getSeconds()).padStart(2, '0');
+      
+      const startStr = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+      
+      const endYear = s.end.getFullYear();
+      const endMonth = String(s.end.getMonth() + 1).padStart(2, '0');
+      const endDay = String(s.end.getDate()).padStart(2, '0');
+      const endHours = String(s.end.getHours()).padStart(2, '0');
+      const endMinutes = String(s.end.getMinutes()).padStart(2, '0');
+      const endSeconds = String(s.end.getSeconds()).padStart(2, '0');
+      
+      const endStr = `${endYear}-${endMonth}-${endDay}T${endHours}:${endMinutes}:${endSeconds}`;
+      
+      return { start: startStr, end: endStr };
+    });
   }
 
   private async getBusinessSettings() {

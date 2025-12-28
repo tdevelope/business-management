@@ -49,55 +49,75 @@ export class NotificationsService {
   }
 
   async sendAppointmentConfirmationEmail(user: any, appointment: any) {
+    const appointmentDate = appointment.startTime instanceof Date 
+      ? appointment.startTime.toLocaleString('he-IL')
+      : new Date(appointment.startTime).toLocaleString('he-IL');
+    
     return this.sendEmail(
       user.email,
       'אישור תור',
       'appointment-confirmation',
       {
         clientName: user.firstName,
-        serviceName: appointment.serviceName,
-        appointmentDate: appointment.startTime,
+        serviceName: appointment.service?.name || 'Service',
+        appointmentDate,
       },
     );
   }
 
   async sendAppointmentCancelledEmail(user: any, appointment: any, reason?: string) {
+    const appointmentDate = appointment.startTime instanceof Date 
+      ? appointment.startTime.toLocaleString('he-IL')
+      : new Date(appointment.startTime).toLocaleString('he-IL');
+    
     return this.sendEmail(
       user.email,
       'ביטול תור',
       'appointment-cancelled',
       {
         clientName: user.firstName,
-        serviceName: appointment.serviceName,
-        appointmentDate: appointment.startTime,
+        serviceName: appointment.service?.name || 'Service',
+        appointmentDate,
         reason: reason || 'No reason specified',
       },
     );
   }
 
   async sendAppointmentReminderEmail(user: any, appointment: any) {
+    const appointmentDate = appointment.startTime instanceof Date 
+      ? appointment.startTime.toLocaleString('he-IL')
+      : new Date(appointment.startTime).toLocaleString('he-IL');
+    
     return this.sendEmail(
       user.email,
       'תזכורת לתור',
       'appointment-reminder',
       {
         clientName: user.firstName,
-        serviceName: appointment.serviceName,
-        appointmentDate: appointment.startTime,
+        serviceName: appointment.service?.name || 'Service',
+        appointmentDate,
       },
     );
   }
 
   async sendAppointmentUpdatedEmail(user: any, appointment: any) {
+    const appointmentDate = appointment.startTime instanceof Date 
+      ? appointment.startTime.toLocaleString('he-IL')
+      : new Date(appointment.startTime).toLocaleString('he-IL');
+    
+    const appointmentEnd = appointment.endTime instanceof Date 
+      ? appointment.endTime.toLocaleString('he-IL')
+      : new Date(appointment.endTime).toLocaleString('he-IL');
+    
     return this.sendEmail(
       user.email,
       'התור שלך עודכן',
       'appointment-updated',
       {
         clientName: user.firstName,
-        serviceName: appointment.service.name,
-        appointmentDate: appointment.startTime,
-        appointmentEnd: appointment.endTime,
+        serviceName: appointment.service?.name || 'Service',
+        appointmentDate,
+        appointmentEnd,
       },
     );
   }
