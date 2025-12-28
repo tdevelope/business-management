@@ -23,7 +23,10 @@ export default function ReportsDashboard() {
   // Total revenue
   const totalRevenue = appointments
     .filter(a => a.status === "done")
-    .reduce((sum, a) => sum + (servicesById[String(a.serviceId)]?.price || 0), 0);
+    .reduce((sum, a) => {
+      const servicePrice = a.service?.price || servicesById[String(a.serviceId)]?.price || 0;
+      return sum + servicePrice;
+    }, 0);
 
   // Appointments by status
   const appointmentsByStatus = appointments.reduce<Record<string, number>>((acc, a) => {
@@ -61,7 +64,8 @@ export default function ReportsDashboard() {
     .filter(a => a.status === "done")
     .forEach(a => {
       const month = format(new Date(a.startTime), "yyyy-MM");
-      revenuePerMonth[month] = (revenuePerMonth[month] || 0) + (servicesById[String(a.serviceId)]?.price || 0);
+      const servicePrice = a.service?.price || servicesById[String(a.serviceId)]?.price || 0;
+      revenuePerMonth[month] = (revenuePerMonth[month] || 0) + servicePrice;
     });
   const revenuePerMonthData = Object.entries(revenuePerMonth)
     .sort(([a], [b]) => a.localeCompare(b))
@@ -90,7 +94,14 @@ export default function ReportsDashboard() {
           </CardHeader>
           <CardContent style={{ height: 200 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={Object.entries(appointmentsByStatus).map(([status, count]) => ({ status, count }))}>
+              <BarChart data={Object.entries(appointmentsByStatus).map(([status, count]) => {
+                const statusMap: Record<string, string> = {
+                  'scheduled': 'מתוזמן',
+                  'done': 'הושלם',
+                  'cancelled': 'בוטל'
+                };
+                return { status: statusMap[status] || status, count };
+              })}>
                 <XAxis dataKey="status" />
                 <YAxis />
                 <Tooltip />

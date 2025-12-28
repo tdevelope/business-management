@@ -324,10 +324,15 @@ export class AppointmentsService {
     if (!suggestions.length) throw new BadRequestException("No available suggestions");
     if (!dto.startTime) throw new BadRequestException("You must send the chosen startTime from suggestions");
 
-    const chosenTimeStr = dto.startTime instanceof Date ? dto.startTime.toISOString() : dto.startTime;
+    const chosenTimeStr = dto.startTime instanceof Date ? dto.startTime.toISOString() : String(dto.startTime);
     if (!chosenTimeStr) throw new BadRequestException("Invalid chosen startTime");
 
-    const chosen = suggestions.find(s => s.start === chosenTimeStr);
+    // Normalize comparison: convert both to ISO strings for comparison
+    const chosen = suggestions.find(s => {
+      const sStartNormalized = new Date(s.start).toISOString();
+      const chosenNormalized = new Date(chosenTimeStr).toISOString();
+      return sStartNormalized === chosenNormalized;
+    });
     if (!chosen) throw new BadRequestException("Invalid suggestion selected");
 
     const oldStart = new Date(appointment.startTime);
