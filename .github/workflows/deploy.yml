@@ -22,12 +22,16 @@ jobs:
           cat << 'EOF' > ~/.ssh/id_rsa
           ${{ secrets.EC2_SSH_KEY }}
           EOF
-                    chmod 600 ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
 
       - name: Add EC2 to known_hosts
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Test EC2 SSH connection
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo Connection successful"
 
       - name: Deploy Backend
         run: |
