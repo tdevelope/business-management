@@ -31,7 +31,7 @@ jobs:
             git fetch origin deployment &&
             git reset --hard origin/deployment &&
             npm install &&
-            pm2 restart node-service
+            sudo systemctl restart node-service
           "
 
       - name: Deploy Frontend
