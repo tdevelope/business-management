@@ -95,7 +95,7 @@ export default function RegisterPage() {
       <div className="max-w-md mx-auto">
         <Card>
           <CardHeader className="text-right">
-            <CardTitle className="text-2xl">צור חשבון חדש</CardTitle>
+            <CardTitle className="text-2xl">צור חשבון חדש:</CardTitle>
             <CardDescription>הרשם כדי להתחיל להזמן תורים</CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
