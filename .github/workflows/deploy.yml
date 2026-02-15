@@ -10,46 +10,52 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20
-
-      - name: Copy SSH key
+      - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          cat << 'EOF' > ~/.ssh/id_rsa
-          ${{ secrets.EC2_SSH_KEY }}
-          EOF
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-
-      - name: Add EC2 to known_hosts
-        run: |
-          mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Test EC2 SSH connection
+      - name: Debug SSH Setup
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo Connection successful"
+          echo "=== SSH Key Info ==="
+          ls -la ~/.ssh/
+          echo "=== First line of key ==="
+          head -n 1 ~/.ssh/id_rsa
+          echo "=== Last line of key ==="
+          tail -n 1 ~/.ssh/id_rsa
+          echo "=== Line count ==="
+          wc -l ~/.ssh/id_rsa
+          echo "=== Key permissions ==="
+          stat -c "%a %n" ~/.ssh/id_rsa
+          echo "=== Trying to extract key type ==="
+          ssh-keygen -l -f ~/.ssh/id_rsa || echo "Key format issue!"
+
+      - name: Test SSH connection
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo 'Connection successful'"
 
       - name: Deploy Backend
         run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
             cd ~/business-management/backend &&
             git pull origin deployment &&
             npm install &&
             pm2 restart node-service
           "
 
-      - name: Build Frontend
-        run: |
-          npm --prefix frontend install
-          npm --prefix frontend run build
-
       - name: Deploy Frontend
         run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
-            rm -rf /var/www/html/*
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+            cd ~/business-management/frontend &&
+            git pull origin deployment &&
+            npm install &&
+            npm run build &&
+            sudo rm -rf /var/www/html/* &&
+            sudo cp -r .next public package.json /var/www/html/ &&
+            sudo chown -R www-data:www-data /var/www/html
           "
-          scp -i ~/.ssh/id_rsa -r frontend/.next frontend/public frontend/package.json ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/html/
