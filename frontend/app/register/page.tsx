@@ -117,7 +117,7 @@ export default function RegisterPage() {
                   <Label htmlFor="lastName">שם משפחה</Label>
                   <Input
                     id="lastName"
-                    placeholder="כהן"
+                    placeholder="לוי"
                     value={formData.lastName}
                     className="text-right"
                     onChange={(e) => handleChange("lastName", e.target.value)}
