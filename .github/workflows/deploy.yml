@@ -20,21 +20,6 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Debug SSH Setup
-        run: |
-          echo "=== SSH Key Info ==="
-          ls -la ~/.ssh/
-          echo "=== First line of key ==="
-          head -n 1 ~/.ssh/id_rsa
-          echo "=== Last line of key ==="
-          tail -n 1 ~/.ssh/id_rsa
-          echo "=== Line count ==="
-          wc -l ~/.ssh/id_rsa
-          echo "=== Key permissions ==="
-          stat -c "%a %n" ~/.ssh/id_rsa
-          echo "=== Trying to extract key type ==="
-          ssh-keygen -l -f ~/.ssh/id_rsa || echo "Key format issue!"
-
       - name: Test SSH connection
         run: |
           ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo 'Connection successful'"
@@ -43,7 +28,8 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
             cd ~/business-management/backend &&
-            git pull origin deployment &&
+            git fetch origin deployment &&
+            git reset --hard origin/deployment &&
             npm install &&
             pm2 restart node-service
           "
@@ -52,7 +38,8 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
             cd ~/business-management/frontend &&
-            git pull origin deployment &&
+            git fetch origin deployment &&
+            git reset --hard origin/deployment &&
             npm install &&
             npm run build &&
             sudo rm -rf /var/www/html/* &&
