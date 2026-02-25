@@ -45,6 +45,6 @@ jobs:
             npm install &&
             npm run build &&
             sudo rm -rf /var/www/html/* &&
-            sudo cp -r out/* /var/www/html/ &&
+            sudo cp -r out/. /var/www/html/ &&
             sudo chown -R www-data:www-data /var/www/html
           "
